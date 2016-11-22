@@ -294,7 +294,7 @@ var f_crud = {
     form_panel.model_name  = grid_panel.model_name;
     form_panel.store_name  = grid_panel.store_name;
     form_panel.store_array = grid_panel.form_store_array;
-    form_panel.grid_panel  = grid_panel.down('#grid');
+    form_panel.grid_panel = grid_panel.down('#grid');
     form_panel.action = action;
 
     if (form_panel.getItemId()==='form') {
