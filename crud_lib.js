@@ -224,7 +224,6 @@ var f_crud = {
       //Ext.Msg.alert('Error','Se produjo un error de lectura, orden sql: '+sql);
       if(typeof callback == 'function') callback(-1);
     }  
-
   },
   
   load_store: function(store_name, sql_where, sql_command, callback) {
@@ -391,21 +390,24 @@ var f_crud = {
     }
   },
 
-  save_several_records: function(form_panel) {
-    var store_array = form_panel.store_array;
-    if (form_panel.getItemId()==='form') {
-      var form = form_panel;  
-    } else {
-      var form = form_panel.down('#form');
-    }
-    var listOfLotes = form_panel.down("#lotesgrid").store.data.items;
-    var saveRecord = function(lote, cb) {
-      if(lote.data.agregar) {
-        var newRecordValues = {
-          cod_lote: lote.data.codigo,
-          cod_actividad: form_panel.pivot_code
-        }, 
-        newrecord = Ext.create(form_panel.model_name);
+  /* mientras que save_form toma el record generado por el form, y lo inserta en la tabla, save_several_records 
+    loopeara sobre los records de una grilla y los irá insertando (TIENE QUE SER SECUENCIAL, ya que cada registro
+    necesita generar una nueva clave) - config should have the name of the pivot pk and the name of the recordsPk, like
+    
+    var config = {
+      gridRecordPK: 'cod_lote',
+      pivotPK: 'cod_actividad'
+    };
+  */
+  save_several_records: function(form_panel, config) {
+    var store_array = form_panel.store_array, recordsToAdd, form,
+    saveRecord = function(gridRecord, cb) {
+      if(gridRecord.data.agregar) {
+        var newRecordValues = {}, newrecord = Ext.create(form_panel.model_name);
+
+        newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
+        newRecordValues[config.pivotPK] = form_panel.pivot_code;
+        
         f_crud.secuencia(function(rtn){
           if (rtn > -1) {
             newrecord.set('id',rtn);
@@ -447,7 +449,15 @@ var f_crud = {
         cb();
       }
     };
-    async.eachSeries(listOfLotes, saveRecord, function(){ 
+
+    if (form_panel.getItemId() === 'form') {
+      form = form_panel;  
+    } 
+    else {
+      form = form_panel.down('#form');
+    }
+    recordsToAdd = form_panel.down("#addinggrid").store.data.items;
+    async.eachSeries(recordsToAdd, saveRecord, function(){ 
       f_crud.close_form(form_panel);
       if (MyApp.estado_sinc !== 'PENDIENTE') {
         MyApp.estado_sinc = 'PENDIENTE' ;
@@ -458,37 +468,36 @@ var f_crud = {
   },
 
   save_form: function(form_panel) {
-    var store_array = form_panel.store_array;
+    var store_array = form_panel.store_array, form, record;
     if (form_panel.getItemId()==='form') {
-      var form = form_panel;  
-    } else {
-      var form = form_panel.down('#form');
+      form = form_panel;  
     }
     else {
-      var record = form.getRecord();
-      record.set(form.getValues());  
-      if (form_panel.action === 'ADD') {
-        store_array[0].add(record);
-        form_panel.grid_panel.getSelectionModel().select(record);
-      }
-      f_crud.save_stores( store_array,function(rtn){
-        if (rtn === -1) {
-          alert('Error durante la grabación ');}
-        else {
-          var modelName, sql_table;
-          for (i in store_array){
-            modelName = store_array[i].getProxy().getModel().getName();
-            sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);
-            // f_sinc.agregar_tabla(sql_table);        
-          }
+      form = form_panel.down('#form');
+    }
+    record = form.getRecord();
+    record.set(form.getValues());  
+    if (form_panel.action === 'ADD') {
+      store_array[0].add(record);
+      form_panel.grid_panel.getSelectionModel().select(record);
+    }
+    f_crud.save_stores( store_array,function(rtn){
+      if (rtn === -1) {
+        alert('Error durante la grabación ');}
+      else {
+        var modelName, sql_table;
+        for (i in store_array){
+          modelName = store_array[i].getProxy().getModel().getName();
+          sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);
+          // f_sinc.agregar_tabla(sql_table);        
         }
-      });
-      f_crud.close_form(form_panel);
-      if (MyApp.estado_sinc !== 'PENDIENTE') {
-        MyApp.estado_sinc = 'PENDIENTE' ;
-        // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
-        // f_sinc.defer_sinc();      
       }
+    });
+    f_crud.close_form(form_panel);
+    if (MyApp.estado_sinc !== 'PENDIENTE') {
+      MyApp.estado_sinc = 'PENDIENTE' ;
+      // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
+      // f_sinc.defer_sinc();      
     }
   },
   
@@ -753,7 +762,6 @@ var f_crud = {
       console.log('db.transaction = Fail! ',sql_create); 
       if(typeof callback == 'function') callback(-1);
     }
-
   },
   
   getSchemaString: function(proxy, model) {
@@ -802,4 +810,5 @@ var f_crud = {
         return 'NUMERIC';
     }
   }
+
 };
