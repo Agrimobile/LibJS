@@ -288,8 +288,8 @@ var f_crud = {
     MyApp.main.add(form_panel);
     MyApp.main.getLayout().setActiveItem(form_panel);
     //---------------
-    if(grid_panel.pivot_code) {
-      form_panel.pivot_code = grid_panel.pivot_code;
+    if(grid_panel.parent) {
+      form_panel.parent = grid_panel.parent;
     }
     form_panel.model_name  = grid_panel.model_name;
     form_panel.store_name  = grid_panel.store_name;
@@ -406,8 +406,9 @@ var f_crud = {
         var newRecordValues = {}, newrecord = Ext.create(form_panel.model_name);
 
         newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
-        newRecordValues[config.pivotPK] = form_panel.pivot_code;
-        
+        newRecordValues[config.pivotPK] = form_panel.parent.codigo;
+        newRecordValues.nombre = gridRecord.data.nombre + "(" + form_panel.parent.nombre + ")";
+
         f_crud.secuencia(function(rtn){
           if (rtn > -1) {
             newrecord.set('id',rtn);
