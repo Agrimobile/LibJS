@@ -258,12 +258,12 @@ var f_crud = {
     // Leo datos via SQL
     db.transaction(function (tx) {
       tx.executeSql(sql, [], function (tx, results) {
-        for (var i = 0; i < results.rows.length; i++){
+        for (var i = 0; i < results.rows.length; i++) {
           data_array.push(results.rows.item(i));
         }
-          store.add(data_array);
+        store.add(data_array);
       });
-    },f_fail,f_success);
+    }, f_fail, f_success);
     
     function f_success() { 
       console.log('db.transaction = Ok - ' + sql_table + ' count: ' + store.getCount()); 
@@ -286,7 +286,7 @@ var f_crud = {
     // MyApp.screen_count++ ;
     // MyApp.screen_name[MyApp.screen_count] = form_panel;
     MyApp.main.add(form_panel);
-    MyApp.main.getLayout().setActiveItem(form_panel);
+    //MyApp.main.getLayout().setActiveItem(form_panel);
     //---------------
     if(grid_panel.parent) {
       form_panel.parent = grid_panel.parent;
@@ -302,16 +302,17 @@ var f_crud = {
     } else {
       var form = form_panel.down('#form');
     }
+
     if (action=='ADD'){
       form_panel.title = 'Agregando';
       var newrecord = Ext.create(form_panel.model_name);    
       f_crud.secuencia(function(rtn){
         if (rtn !== -1) {
-          newrecord.set('id',rtn);
+          newrecord.set('id', rtn);
           form.loadRecord(newrecord);
           if (typeof newrecord.get('codigo') === 'undefined') {} else {
             f_crud.get_codigo(newrecord,function(rtn) {
-              newrecord.set('codigo',rtn)
+              newrecord.set('codigo', rtn)
               form.loadRecord(newrecord);
             } );
           }          
@@ -324,6 +325,7 @@ var f_crud = {
       form.loadRecord(grid_panel.record);
       // form_panel.form_init();
     }
+    MyApp.main.getLayout().setActiveItem(form_panel);
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tabless
