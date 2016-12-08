@@ -276,7 +276,7 @@ var f_crud = {
     }  
   },
     
-  form_open: function(grid_panel, action){
+  form_open: function(grid_panel, action) {
     if (action==='EDIT' && typeof grid_panel.record==='undefined') return;
     // Open new screen
     // MyApp.main.down('#estado_editar').setHtml('Editando');
@@ -302,30 +302,34 @@ var f_crud = {
     } else {
       var form = form_panel.down('#form');
     }
-
-    if (action=='ADD'){
+    if (action === 'ADD') {
       form_panel.title = 'Agregando';
       var newrecord = Ext.create(form_panel.model_name);    
       f_crud.secuencia(function(rtn){
         if (rtn !== -1) {
           newrecord.set('id', rtn);
           form.loadRecord(newrecord);
-          if (typeof newrecord.get('codigo') === 'undefined') {} else {
+          if (typeof newrecord.get('codigo') === 'undefined') {
+            MyApp.main.getLayout().setActiveItem(form_panel);
+          } 
+          else {
             f_crud.get_codigo(newrecord,function(rtn) {
               newrecord.set('codigo', rtn)
               form.loadRecord(newrecord);
-            } );
+              MyApp.main.getLayout().setActiveItem(form_panel);
+            });
           }          
         }        
         // form_panel.form_init();
       });
     }
-    if (action=='EDIT'){
+    if (action === 'EDIT') {
       form_panel.title = 'Editando';
       form.loadRecord(grid_panel.record);
+      MyApp.main.getLayout().setActiveItem(form_panel);
       // form_panel.form_init();
     }
-    MyApp.main.getLayout().setActiveItem(form_panel);
+    // MyApp.main.getLayout().setActiveItem(form_panel);
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tabless
@@ -352,7 +356,7 @@ var f_crud = {
     });
   },
 
-  grid_delete: function(grid_panel){
+  grid_delete: function(grid_panel) {
     //if (!grid_panel.down('#grid').record ) return;
     Ext.Msg.show({
       title:'Borrar registro',
@@ -362,7 +366,7 @@ var f_crud = {
       fn: opcion
     });
     var store;
-    function opcion(btn){
+    function opcion(btn) {
       var store = Ext.getStore(grid_panel.store_name);
       if (btn=='yes'){
         grid_panel.form_store_array[0].remove(grid_panel.record);
@@ -383,7 +387,7 @@ var f_crud = {
     }
   },
       
-  close_form: function(form){
+  close_form: function(form) {
     if (MyApp.main.getLayout().getLayoutItems().length > 1) MyApp.main.getLayout().prev();
     form.close();
     // MyApp.main.down('#estado_editar').setHtml('');    
