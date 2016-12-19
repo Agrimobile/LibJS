@@ -375,27 +375,6 @@ var f_crud = {
         });
       }      
     });
-
-    /*var query = "select * from " + checkConfig.table + " where " + checkConfig.field + "=" + grid_panel.record.data.codigo;
-    f_crud.sql_select(query, function(resultSet){
-      if(resultSet === -1 || !Array.isArray(resultSet)) {
-        console.log("Query statement: " + query);
-        throw "Database error: Check your sql statement or your WebSql instance";
-      }
-      else{
-        if(resultSet.length > 0) {
-          Ext.Msg.alert({
-            title: checkConfig.msgTitle,
-            message: checkConfig.message,
-            iconCls: 'x-fa fa-warning',
-            buttons:  Ext.Msg.OK
-          });
-        }
-        else {
-          f_crud.grid_delete(grid_panel);
-        }
-      }
-    });*/
   },
 
   grid_delete: function(grid_panel) {
@@ -854,6 +833,23 @@ var f_crud = {
       case 'bool':
         return 'NUMERIC';
     }
+  },
+
+  getDisplayValue: function(storeName, value, fieldName, idName) {
+    var st = Ext.getStore(storeName), cod, displayValue;
+    if(idName) {
+      cod = st.find(idName, value);  
+    }
+    else {
+      cod = st.find("codigo", value);
+    }
+    if(cod > -1) {
+      displayValue = st.getAt(cod).get(fieldName);
+    }
+    else {
+      displayValue = '';
+    }
+    return displayValue;
   }
 
 };
