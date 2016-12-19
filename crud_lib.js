@@ -254,7 +254,6 @@ var f_crud = {
     store.getProxy().clear();
     store.data.clear();
     store.sync();
-     
     // Leo datos via SQL
     db.transaction(function (tx) {
       tx.executeSql(sql, [], function (tx, results) {
@@ -319,22 +318,65 @@ var f_crud = {
               MyApp.main.getLayout().setActiveItem(form_panel);
             });
           }          
-        }        
-        // form_panel.form_init();
+        }
       });
     }
-    if (action === 'EDIT') {
-      form_panel.title = 'Editando';
-      form.loadRecord(grid_panel.record);
+    else {
+      if (action === 'EDIT') {
+        form_panel.title = 'Editando';
+        form.loadRecord(grid_panel.record);
+      }
       MyApp.main.getLayout().setActiveItem(form_panel);
-      // form_panel.form_init();
     }
-    // MyApp.main.getLayout().setActiveItem(form_panel);
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tabless
   grid_check_delete: function(grid_panel, checkConfig) {
-    var query = "select * from " + checkConfig.table + " where " + checkConfig.field + "=" + grid_panel.record.data.codigo;
+    var allowDelete = true, tablesToDelete=[];
+    if(!Array.isArray(checkConfig)) {
+      checkConfig = [checkConfig];
+    }
+
+    checkTable = function(tableConfig, cb) {
+      var pkFieldName;
+      if (!tableConfig.pkName) {
+        pkFieldName = "codigo";
+      }
+      else {
+        pkFieldName = tableConfig.pkName;
+      }
+      var query = "select * from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
+      f_crud.sql_select(query, function(resultSet){
+        if(resultSet === -1 || !Array.isArray(resultSet)) {
+          console.log("Query statement: " + query);
+          cb();
+          throw "Database error: Check your sql statement or your WebSql instance";
+        }
+        else{
+          if(resultSet.length > 0) {
+            allowDelete = false;
+            tablesToDelete.push(tableConfig.table);
+          }
+          cb();
+        }
+      });
+    };
+
+    async.eachSeries(checkConfig, checkTable, function() {
+      if(allowDelete) {
+        f_crud.grid_delete(grid_panel);
+      }
+      else {
+        Ext.Msg.alert({
+          title: checkConfig[0].msgTitle,
+          message: checkConfig[0].message,
+          iconCls: 'x-fa fa-warning',
+          buttons:  Ext.Msg.OK
+        });
+      }      
+    });
+
+    /*var query = "select * from " + checkConfig.table + " where " + checkConfig.field + "=" + grid_panel.record.data.codigo;
     f_crud.sql_select(query, function(resultSet){
       if(resultSet === -1 || !Array.isArray(resultSet)) {
         console.log("Query statement: " + query);
@@ -353,7 +395,7 @@ var f_crud = {
           f_crud.grid_delete(grid_panel);
         }
       }
-    });
+    });*/
   },
 
   grid_delete: function(grid_panel) {
@@ -516,17 +558,15 @@ var f_crud = {
       f_crud.get_sql_commands(store_array[i],sql_array,sincronizar);
     }    
 
-    //console.log(sql_array);
     var db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024);
     var last_sql = '';
     db.transaction(function (tx) {
       for (var j in sql_array){
         last_sql = sql_array[j];
-        // console.log(last_sql);
         tx.executeSql(sql_array[j]);                    
       }
     },f_fail,f_success);
-    //console.log(sql_array);
+
     function f_success() { 
       console.log('db.transaction = Ok'); 
       for (var i in store_array) {
@@ -535,23 +575,19 @@ var f_crud = {
       }
       if(typeof callback == 'function') callback(1);
     }
-    function f_fail(error)    { 
+    function f_fail(error) { 
       console.log('error',error.message);
       f_crud.mensaje('db.transaction = Fail!','Error: '+error.message+' Orden SQL:' +last_sql);
       if(typeof callback == 'function') callback(-1);
     }
-
-
-    //alert(data);
-    // db.transaction
   },
 
-  get_sql_commands: function(store,sql_array, sincronizar) {
-    var record, name, alias;
-    var sql = '',sql_log = '';
+  get_sql_commands: function(store, sql_array, sincronizar) {
+    var record, name, alias,
+    sql = '',sql_log = '',
     // Get Table name in model
-    var modelName = store.getProxy().getModel().getName()
-    var sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);
+    modelName = store.getProxy().getModel().getName(), sql_table;
+    sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);
     
     // Update
     var records = store.getUpdatedRecords();
@@ -559,9 +595,11 @@ var f_crud = {
     for (var i in records) {
       record = records[i];
       if (sincronizar !== 'bajar') {
-        if (record.get('estado_registro') !== 'A') record.set('estado_registro','M');
+        if (record.get('estado_registro') !== 'A') {
+          record.set('estado_registro','M');
+        }
       }
-      if (sincronizar == 'subir' && record.sql_alias){
+      if (sincronizar === 'subir' && record.sql_alias){
         sql_table = record.sql_alias;  
       }
       sql     = 'Update '+sql_table+' set ';
@@ -604,7 +642,7 @@ var f_crud = {
     for (i in records) {
       record = records[i];
       if (sincronizar !== 'bajar') record.set('estado_registro','A');
-      if (sincronizar == 'subir' && record.sql_alias){
+      if (sincronizar === 'subir' && record.sql_alias){
         sql_table = record.sql_alias;  
         console.log('sql_table',sql_table);
       }
@@ -618,7 +656,7 @@ var f_crud = {
          field = fields[i];
         name = field.getName();
         alias = name;
-        if (sincronizar == 'subir'){
+        if (sincronizar === 'subir'){
           if(field.sql_alias) alias = field.sql_alias;
           if(field.sincronizar === false) name = null;
         }
@@ -648,7 +686,7 @@ var f_crud = {
     sql = '';
     for (i in records) {
       record = records[i];
-       if (sincronizar == 'subir' && record.sql_alias){
+       if (sincronizar === 'subir' && record.sql_alias){
         sql_table = record.sql_alias;  
       }
       sql = 'Delete from '+sql_table+' where id='+record.get('id');
