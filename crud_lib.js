@@ -850,6 +850,26 @@ var f_crud = {
       displayValue = '';
     }
     return displayValue;
-  }
+  },
 
+  renderGridWidth: function(component) {
+    var cols = component.getColumns(), nonHiddenCols = 0, avg = 0;
+    for (var i = cols.length - 1; i >= 0; i--) {
+      if(cols[i].hidden === false){
+        nonHiddenCols++;
+      }
+    }
+    if(nonHiddenCols > 0) {
+      avg = 100/nonHiddenCols;
+      avgStr = avg + "%";
+      for (i = cols.length - 1; i >= 0; i--) {
+        if(cols[i].hidden === false){
+         cols[i].width = avgStr;
+        }
+      }
+    }
+    else {
+      console.log("Error: all the columns were hidden!");
+    }
+  }
 };
