@@ -330,7 +330,7 @@ var f_crud = {
     }
   },
   
-  //grid_check_delete can be used in grid with records that are asociated by agregation with other tabless
+  //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
   grid_check_delete: function(grid_panel, checkConfig) {
     var allowDelete = true, tablesToDelete=[];
     if(!Array.isArray(checkConfig)) {
@@ -356,6 +356,10 @@ var f_crud = {
           if(resultSet.length > 0) {
             allowDelete = false;
             tablesToDelete.push(tableConfig.table);
+            /*
+              tableToDelete es simplemente una acumulacion de los nombres de las tablas de donde se 
+              deberian borrar registros para que allowDelete sea true; puede usarse para que el mensaje de error sea mas amigable 
+            */
           }
           cb();
         }
