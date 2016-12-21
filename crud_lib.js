@@ -332,10 +332,54 @@ var f_crud = {
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
   grid_check_delete: function(grid_panel, checkConfig) {
-    var allowDelete = true, tablesToDelete=[];
+    var allowDelete = true, tablesToDelete = [], selects = [], sqlselect, tableConfig, pkFieldName,
+      db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024);
+
     if(!Array.isArray(checkConfig)) {
       checkConfig = [checkConfig];
     }
+    for (var i = checkConfig.length - 1; i >= 0; i--) {
+      tableConfig = checkConfig[i];
+      if (!tableConfig.pkName) {
+        pkFieldName = "codigo";
+      }
+      else {
+        pkFieldName = tableConfig.pkName;
+      }
+      sqlselect = "select * from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
+      selects.push(sqlselect);
+    }
+
+    // selects has one select sql for each table to check
+    debugger;
+    db.transaction(function (tx) {
+      for (var j = selects.length - 1; j >= 0; j--) {
+        debugger;
+        tx.executeSql(selects[j], [], function(tx, results){
+          if(results.rows.length > 0) {
+            debugger;
+            allowDelete = false;
+            //tablesToDelete.push(checkConfig[j].table);
+          }
+        });
+      }
+    }, function(e) { //transaction failed cb function
+      debugger;
+      console.log('db.transaction = Fail! - sql statement: ' + e.message); 
+    }, function() {
+      debugger;
+      if(allowDelete) {
+        f_crud.grid_delete(grid_panel);
+      }
+      else {
+        Ext.Msg.alert({
+          title: checkConfig[0].msgTitle,
+          message: checkConfig[0].message,
+          iconCls: 'x-fa fa-warning',
+          buttons:  Ext.Msg.OK
+        });
+      }
+    });
 
     checkTable = function(tableConfig, cb) {
       var pkFieldName;
@@ -366,7 +410,7 @@ var f_crud = {
       });
     };
 
-    async.eachSeries(checkConfig, checkTable, function() {
+    /*async.eachSeries(checkConfig, checkTable, function() {
       if(allowDelete) {
         f_crud.grid_delete(grid_panel);
       }
@@ -378,7 +422,7 @@ var f_crud = {
           buttons:  Ext.Msg.OK
         });
       }      
-    });
+    });*/
   },
 
   grid_delete: function(grid_panel) {
