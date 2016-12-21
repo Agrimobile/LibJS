@@ -431,6 +431,79 @@ var f_crud = {
       pivotPK: 'cod_actividad'
     };
   */
+
+  save_several_records: function(form_panel, config) {
+    var recordsToAdd = [], gridRecs = form_panel.down("#addinggrid").store.data.items,
+      store_array = form_panel.store_array, form, len, modelName, tableName;
+    debugger;
+    modelName = form_panel.store_array[0].getModel().getName();
+    tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
+    if (form_panel.getItemId() === 'form') {
+      form = form_panel;  
+    } 
+    else {
+      form = form_panel.down('#form');
+    }
+    
+    for (var i = gridRecs.length - 1; i >= 0; i--) {
+      if(gridRecs[i].data.agregar) {
+        recordsToAdd.push(gridRecs[i]);
+      }
+    }
+    
+    len = recordsToAdd.length;
+
+    f_crud.secuencia(function(genMaxId) {
+      if(genMaxId > -1) {
+        // get_codigos: function(table, cantidad, callback)
+        f_crud.get_codigos(tableName, len, function(genMaxCod) {
+          if(genMaxCod > -1) {
+            // magic happens here.. 
+            var newrecord, newRecordValues = {}, maxId = genMaxId, maxCod = genMaxCod;
+            for (var i = len - 1; i >= 0; i--) {
+
+              // record DATA
+              gridRecord = recordsToAdd[i];
+              newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
+              newRecordValues[config.pivotPK] = form_panel.parent.codigo;
+              newRecordValues.nombre = gridRecord.data.nombre + "(" + form_panel.parent.nombre + ")";
+
+              // identifiers
+              newrecord = Ext.create(form_panel.model_name);
+              newrecord.set('id', maxId);
+              newrecord.set('codigo', maxCod);
+
+              // adding record
+              store_array[0].add(newrecord);
+
+              // more identifiers
+              maxId--;
+              maxCod--;
+            }
+
+            // saving store
+            
+            f_crud.save_stores(store_array, function(rtn){
+              if (rtn > -1) {
+                f_crud.close_form(form_panel);
+                console.log("Worked ok!");
+              }
+              else {
+                reject("Error: while trying to save record");
+              }
+            });
+          }
+          else {
+            reject("Error: while trying to generate codigo value");
+          }
+        });
+      }
+      else {
+        reject("Error: while trying to generate id value");
+      }
+    }, len);  
+  },
+  /*
   save_several_records: function(form_panel, config) {
     var store_array = form_panel.store_array, recordsToAdd, form,
     saveRecord = function(gridRecord, cb) {
@@ -499,6 +572,7 @@ var f_crud = {
       }
     });
   },
+  */
 
   save_form: function(form_panel) {
     var store_array = form_panel.store_array, form, record;
@@ -686,14 +760,37 @@ var f_crud = {
 
   get_codigo: function(record, callback){
     // Obtengo siguiente codigo 
-    var modelName = record.self.getName();
-    var table_name = modelName.slice(modelName.lastIndexOf('.') + 1);
-    var db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
-    var sql = 'SELECT max(codigo) as codigo FROM ' + table_name ;
+    var modelName = record.self.getName(), table_name, db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024), sql;
+    table_name = modelName.slice(modelName.lastIndexOf('.') + 1);
+
+    sql = 'SELECT max(codigo) as codigo FROM ' + table_name ;
     db.transaction(function (tx) {
       tx.executeSql(sql, [], function (tx, results) {
         var maxcodigo = Number(results.rows.item(0).codigo)+1;
         if(typeof callback == 'function') callback(maxcodigo); 
+      });
+    }, f_fail, f_success);
+    function f_success() { }
+    function f_fail() { 
+      f_crud.mensaje('Error','Se produjo un error al generar el nuevo Código - SQL:' + sql);
+    }        
+  },
+
+  get_codigos: function(table, cantidad, callback){
+    // Obtengo siguiente/s codigo/s 
+    var  maxcodigo, sql,
+    db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
+
+    var sql = 'SELECT max(codigo) as codigo FROM ' + table;
+    db.transaction(function (tx) {
+      tx.executeSql(sql, [], function (tx, results) {
+        if(cantidad) {
+          maxcodigo = Number(results.rows.item(0).codigo) + cantidad;
+        }
+        else {
+          maxcodigo = Number(results.rows.item(0).codigo) + 1;
+        }
+        if(typeof callback === 'function') callback(maxcodigo);
       });
     }, f_fail, f_success);
     function f_success() { }
