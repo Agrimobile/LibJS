@@ -331,8 +331,9 @@ var f_crud = {
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
+
   grid_check_delete: function(grid_panel, checkConfig) {
-    var allowDelete = true, tablesToDelete = [], selects = [], sqlselect, tableConfig, pkFieldName,
+    var allowDelete = true, tablesToDelete = [], sqlselect = "", tableConfig, pkFieldName,
       db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024);
 
     if(!Array.isArray(checkConfig)) {
@@ -346,28 +347,26 @@ var f_crud = {
       else {
         pkFieldName = tableConfig.pkName;
       }
-      sqlselect = "select * from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
-      selects.push(sqlselect);
-    }
-
-    // selects has one select sql for each table to check
-    debugger;
-    db.transaction(function (tx) {
-      for (var j = selects.length - 1; j >= 0; j--) {
-        debugger;
-        tx.executeSql(selects[j], [], function(tx, results){
-          if(results.rows.length > 0) {
-            debugger;
-            allowDelete = false;
-            //tablesToDelete.push(checkConfig[j].table);
-          }
-        });
+      sqlselect = sqlselect + "select count(*) as 'Count', '" + tableConfig.table + "' as 'Table' from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
+      if(i>0) {
+        sqlselect = sqlselect + " union ";
       }
-    }, function(e) { //transaction failed cb function
-      debugger;
+    }
+    
+    // obtiene un count, de cada una de las tablas relacionadas, de los records linkeados al registro que desea borrarse. Si hay uno, allowDelete sera falso. 
+    db.transaction(function(tx){
+      tx.executeSql(sqlselect, [], function(tx, result){
+        for (var i = result.rows.length - 1; i >= 0; i--) {
+          if(result.rows[i].Count > 0 ) {
+            allowDelete = false;
+            tablesToDelete.push(result.rows[i].Table);
+          }
+        }
+      });
+    }, function(e) { //transaction failed cb
       console.log('db.transaction = Fail! - sql statement: ' + e.message); 
-    }, function() {
-      debugger;
+    }, function() {  //transaction succeeded cb
+      console.log(tablesToDelete);
       if(allowDelete) {
         f_crud.grid_delete(grid_panel);
       }
@@ -381,48 +380,6 @@ var f_crud = {
       }
     });
 
-    checkTable = function(tableConfig, cb) {
-      var pkFieldName;
-      if (!tableConfig.pkName) {
-        pkFieldName = "codigo";
-      }
-      else {
-        pkFieldName = tableConfig.pkName;
-      }
-      var query = "select * from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
-      f_crud.sql_select(query, function(resultSet){
-        if(resultSet === -1 || !Array.isArray(resultSet)) {
-          console.log("Query statement: " + query);
-          cb();
-          throw "Database error: Check your sql statement or your WebSql instance";
-        }
-        else{
-          if(resultSet.length > 0) {
-            allowDelete = false;
-            tablesToDelete.push(tableConfig.table);
-            /*
-              tableToDelete es simplemente una acumulacion de los nombres de las tablas de donde se 
-              deberian borrar registros para que allowDelete sea true; puede usarse para que el mensaje de error sea mas amigable 
-            */
-          }
-          cb();
-        }
-      });
-    };
-
-    /*async.eachSeries(checkConfig, checkTable, function() {
-      if(allowDelete) {
-        f_crud.grid_delete(grid_panel);
-      }
-      else {
-        Ext.Msg.alert({
-          title: checkConfig[0].msgTitle,
-          message: checkConfig[0].message,
-          iconCls: 'x-fa fa-warning',
-          buttons:  Ext.Msg.OK
-        });
-      }      
-    });*/
   },
 
   grid_delete: function(grid_panel) {
