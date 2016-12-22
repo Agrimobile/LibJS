@@ -435,9 +435,10 @@ var f_crud = {
   save_several_records: function(form_panel, config) {
     var recordsToAdd = [], gridRecs = form_panel.down("#addinggrid").store.data.items,
       store_array = form_panel.store_array, form, len, modelName, tableName;
-    debugger;
+
     modelName = form_panel.store_array[0].getModel().getName();
     tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
+
     if (form_panel.getItemId() === 'form') {
       form = form_panel;  
     } 
@@ -450,33 +451,36 @@ var f_crud = {
         recordsToAdd.push(gridRecs[i]);
       }
     }
-    
+
     len = recordsToAdd.length;
 
     f_crud.secuencia(function(genMaxId) {
       if(genMaxId > -1) {
-        // get_codigos: function(table, cantidad, callback)
         f_crud.get_codigos(tableName, len, function(genMaxCod) {
           if(genMaxCod > -1) {
             // magic happens here.. 
-            var newrecord, newRecordValues = {}, maxId = genMaxId, maxCod = genMaxCod;
+            var newrecord, newRecordValues = {}, maxId = genMaxId, maxCod = genMaxCod, gridRecord;
             for (var i = len - 1; i >= 0; i--) {
-
-              // record DATA
               gridRecord = recordsToAdd[i];
-              newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
-              newRecordValues[config.pivotPK] = form_panel.parent.codigo;
-              newRecordValues.nombre = gridRecord.data.nombre + "(" + form_panel.parent.nombre + ")";
 
               // identifiers
               newrecord = Ext.create(form_panel.model_name);
               newrecord.set('id', maxId);
               newrecord.set('codigo', maxCod);
 
+              // record DATA
+              
+              newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
+              newRecordValues[config.pivotPK] = form_panel.parent.codigo;
+              newRecordValues.nombre = gridRecord.data.nombre + "(" + form_panel.parent.nombre + ")";
+
+              // set record DATA
+              newrecord.set(newRecordValues);
+
               // adding record
               store_array[0].add(newrecord);
 
-              // more identifiers
+              // next identifiers
               maxId--;
               maxCod--;
             }
@@ -503,77 +507,7 @@ var f_crud = {
       }
     }, len);  
   },
-  /*
-  save_several_records: function(form_panel, config) {
-    var store_array = form_panel.store_array, recordsToAdd, form,
-    saveRecord = function(gridRecord, cb) {
-      if(gridRecord.data.agregar) {
-        var newRecordValues = {}, newrecord = Ext.create(form_panel.model_name);
-
-        newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
-        newRecordValues[config.pivotPK] = form_panel.parent.codigo;
-        newRecordValues.nombre = gridRecord.data.nombre + "(" + form_panel.parent.nombre + ")";
-
-        f_crud.secuencia(function(rtn){
-          if (rtn > -1) {
-            newrecord.set('id',rtn);
-            if (typeof newrecord.get('codigo') === 'undefined') {} else {
-              f_crud.get_codigo(newrecord,function(rtn) {
-                if(rtn > -1) {
-                  newrecord.set('codigo',rtn);
-                  newrecord.set(newRecordValues);
-                  store_array[0].add(newrecord);
-                  f_crud.save_stores( store_array, function(rtn){
-                    if (rtn > -1) {
-                      var modelName, sql_table;
-                      for (i in store_array){
-                        modelName = store_array[i].getProxy().getModel().getName();
-                        sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);
-                      }
-                      cb();
-                    }
-                    else {
-                      reject("Error: while trying to save record");
-                      cb();
-                    }
-                  });
-                }
-                else {
-                  reject("Error: while trying to generate codigo value");
-                  cb();
-                }
-              });
-            }
-          }
-          else {
-            reject("Error: while trying to generate id value");
-            cb();
-          }   
-        });
-      }
-      else {
-        cb();
-      }
-    };
-
-    if (form_panel.getItemId() === 'form') {
-      form = form_panel;  
-    } 
-    else {
-      form = form_panel.down('#form');
-    }
-    recordsToAdd = form_panel.down("#addinggrid").store.data.items;
-    async.eachSeries(recordsToAdd, saveRecord, function(){ 
-      f_crud.close_form(form_panel);
-      if (MyApp.estado_sinc !== 'PENDIENTE') {
-        MyApp.estado_sinc = 'PENDIENTE' ;
-        // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
-        // f_sinc.defer_sinc();     
-      }
-    });
-  },
-  */
-
+  
   save_form: function(form_panel) {
     var store_array = form_panel.store_array, form, record;
     if (form_panel.getItemId()==='form') {
