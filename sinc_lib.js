@@ -2,23 +2,56 @@ f_sinc = {
 
 	agregar_todas: function(){
 
-		MyApp.sinc_array_store[0 ]= 'ActividadesMysql';        MyApp.sinc_array_tabla[0]  ='Actividades';
-		MyApp.sinc_array_store[1 ]= 'CampaniasMysql'  ;        MyApp.sinc_array_tabla[1]  ='Campanias';
-		MyApp.sinc_array_store[2 ]= 'ContratistasMysql'  ;     MyApp.sinc_array_tabla[2]  ='Contratistas';
-		MyApp.sinc_array_store[3 ]= 'DepositosMysql'  ;        MyApp.sinc_array_tabla[3]  ='Depositos';
-		MyApp.sinc_array_store[4 ]= 'EstablecimientosMysql';   MyApp.sinc_array_tabla[4]  ='Establecimientos';
-		MyApp.sinc_array_store[5 ]= 'InsumosMysql'  ;          MyApp.sinc_array_tabla[5]  ='Insumos';
-		MyApp.sinc_array_store[6 ]= 'LaboresMysql'  ;          MyApp.sinc_array_tabla[6]  ='Labores';
-		MyApp.sinc_array_store[7 ]= 'Labores_insumosMysql' ;   MyApp.sinc_array_tabla[7]  ='Labores_insumos';
-		MyApp.sinc_array_store[8 ]= 'Labores_maquinariaMysql'; MyApp.sinc_array_tabla[8]  ='Labores_maquinaria';
-		MyApp.sinc_array_store[9 ]= 'Labores_personalMysql'  ; MyApp.sinc_array_tabla[9]  ='Labores_personal';
-		MyApp.sinc_array_store[10]= 'LotesMysql'  ;            MyApp.sinc_array_tabla[10] ='Lotes';
-		MyApp.sinc_array_store[11]= 'Lotes_actividadesMysql' ; MyApp.sinc_array_tabla[11] ='Lotes_actividades';
-		MyApp.sinc_array_store[12]= 'Lotes_coordenadasMysql' ; MyApp.sinc_array_tabla[12] ='Lotes_coordenadas';
-		MyApp.sinc_array_store[13]= 'MaquinariaMysql'  ;       MyApp.sinc_array_tabla[13] ='Maquinaria';
-		MyApp.sinc_array_store[14]= 'PersonalMysql'  ;         MyApp.sinc_array_tabla[14] ='Personal';
-		MyApp.sinc_array_store[15]= 'RubrosMysql'  ;           MyApp.sinc_array_tabla[15] ='Rubros';
-		MyApp.sinc_array_store[16]= 'TareasMysql'  ;           MyApp.sinc_array_tabla[16] ='Tareas';
+		MyApp.sinc_array_store[0]= 'ActividadesMysql';
+		MyApp.sinc_array_tabla[0]  ='Actividades';
+
+		MyApp.sinc_array_store[1]= 'CampaniasMysql';
+		MyApp.sinc_array_tabla[1]  ='Campanias';
+
+		MyApp.sinc_array_store[2]= 'ContratistasMysql';
+		MyApp.sinc_array_tabla[2]  ='Contratistas';
+
+		MyApp.sinc_array_store[3]= 'DepositosMysql';
+		MyApp.sinc_array_tabla[3]  ='Depositos';
+
+		MyApp.sinc_array_store[4]= 'EstablecimientosMysql';
+		MyApp.sinc_array_tabla[4]  ='Establecimientos';
+
+		MyApp.sinc_array_store[5]= 'InsumosMysql';
+		MyApp.sinc_array_tabla[5]  ='Insumos';
+
+		MyApp.sinc_array_store[6]= 'LaboresMysql';
+		MyApp.sinc_array_tabla[6]  ='Labores';
+
+		MyApp.sinc_array_store[7]= 'Labores_insumosMysql';
+		MyApp.sinc_array_tabla[7]  ='Labores_insumos';
+
+		MyApp.sinc_array_store[8]= 'Labores_maquinariaMysql';
+		MyApp.sinc_array_tabla[8]  ='Labores_maquinaria';
+
+		MyApp.sinc_array_store[9]= 'Labores_personalMysql';
+		MyApp.sinc_array_tabla[9]  ='Labores_personal';
+
+		MyApp.sinc_array_store[10]= 'LotesMysql';
+		MyApp.sinc_array_tabla[10] ='Lotes';
+
+		MyApp.sinc_array_store[11]= 'Lotes_actividadesMysql';
+		MyApp.sinc_array_tabla[11] ='Lotes_actividades';
+
+		MyApp.sinc_array_store[12]= 'Lotes_coordenadasMysql';
+		MyApp.sinc_array_tabla[12] ='Lotes_coordenadas';
+
+		MyApp.sinc_array_store[13]= 'MaquinariaMysql';
+		MyApp.sinc_array_tabla[13] ='Maquinaria';
+
+		MyApp.sinc_array_store[14]= 'PersonalMysql';
+		MyApp.sinc_array_tabla[14] ='Personal';
+
+		MyApp.sinc_array_store[15]= 'RubrosMysql';
+		MyApp.sinc_array_tabla[15] ='Rubros';
+
+		MyApp.sinc_array_store[16]= 'TareasMysql';
+		MyApp.sinc_array_tabla[16] ='Tareas';
 	},
 	
 	sincronizar: function(panel){
@@ -116,6 +149,7 @@ f_sinc = {
 			}				
 		}, 30000);					
 	},
+
 	sincronizar_upload: function(store_name,tabla,callback){
 		var sql_where = "estado_registro = 'A' or estado_registro='M' ";
 		var sql_array = [];

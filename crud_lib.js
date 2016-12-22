@@ -330,39 +330,43 @@ var f_crud = {
     }
   },
   
-  //grid_check_delete can be used in grid with records that are asociated by agregation with other tabless
+  //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
+
   grid_check_delete: function(grid_panel, checkConfig) {
-    var allowDelete = true, tablesToDelete=[];
+    var allowDelete = true, tablesToDelete = [], sqlselect = "", tableConfig, pkFieldName,
+      db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024);
+
     if(!Array.isArray(checkConfig)) {
       checkConfig = [checkConfig];
     }
-
-    checkTable = function(tableConfig, cb) {
-      var pkFieldName;
+    for (var i = checkConfig.length - 1; i >= 0; i--) {
+      tableConfig = checkConfig[i];
       if (!tableConfig.pkName) {
         pkFieldName = "codigo";
       }
       else {
         pkFieldName = tableConfig.pkName;
       }
-      var query = "select * from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
-      f_crud.sql_select(query, function(resultSet){
-        if(resultSet === -1 || !Array.isArray(resultSet)) {
-          console.log("Query statement: " + query);
-          cb();
-          throw "Database error: Check your sql statement or your WebSql instance";
-        }
-        else{
-          if(resultSet.length > 0) {
+      sqlselect = sqlselect + "select count(*) as 'Count', '" + tableConfig.table + "' as 'Table' from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
+      if(i>0) {
+        sqlselect = sqlselect + " union ";
+      }
+    }
+    
+    // obtiene un count, de cada una de las tablas relacionadas, de los records linkeados al registro que desea borrarse. Si hay uno, allowDelete sera falso. 
+    db.transaction(function(tx){
+      tx.executeSql(sqlselect, [], function(tx, result){
+        for (var i = result.rows.length - 1; i >= 0; i--) {
+          if(result.rows[i].Count > 0 ) {
             allowDelete = false;
-            tablesToDelete.push(tableConfig.table);
+            tablesToDelete.push(result.rows[i].Table);
           }
-          cb();
         }
       });
-    };
-
-    async.eachSeries(checkConfig, checkTable, function() {
+    }, function(e) { //transaction failed cb
+      console.log('db.transaction = Fail! - sql statement: ' + e.message); 
+    }, function() {  //transaction succeeded cb
+      console.log(tablesToDelete);
       if(allowDelete) {
         f_crud.grid_delete(grid_panel);
       }
@@ -373,8 +377,9 @@ var f_crud = {
           iconCls: 'x-fa fa-warning',
           buttons:  Ext.Msg.OK
         });
-      }      
+      }
     });
+
   },
 
   grid_delete: function(grid_panel) {
@@ -426,57 +431,13 @@ var f_crud = {
       pivotPK: 'cod_actividad'
     };
   */
+
   save_several_records: function(form_panel, config) {
-    var store_array = form_panel.store_array, recordsToAdd, form,
-    saveRecord = function(gridRecord, cb) {
-      if(gridRecord.data.agregar) {
-        var newRecordValues = {}, newrecord = Ext.create(form_panel.model_name);
+    var recordsToAdd = [], gridRecs = form_panel.down("#addinggrid").store.data.items,
+      store_array = form_panel.store_array, form, len, modelName, tableName;
 
-        newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
-        newRecordValues[config.pivotPK] = form_panel.parent.codigo;
-        newRecordValues.nombre = gridRecord.data.nombre + "(" + form_panel.parent.nombre + ")";
-
-        f_crud.secuencia(function(rtn){
-          if (rtn > -1) {
-            newrecord.set('id',rtn);
-            if (typeof newrecord.get('codigo') === 'undefined') {} else {
-              f_crud.get_codigo(newrecord,function(rtn) {
-                if(rtn > -1) {
-                  newrecord.set('codigo',rtn);
-                  newrecord.set(newRecordValues);
-                  store_array[0].add(newrecord);
-                  f_crud.save_stores( store_array, function(rtn){
-                    if (rtn > -1) {
-                      var modelName, sql_table;
-                      for (i in store_array){
-                        modelName = store_array[i].getProxy().getModel().getName();
-                        sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);
-                      }
-                      cb();
-                    }
-                    else {
-                      reject("Error: while trying to save record");
-                      cb();
-                    }
-                  });
-                }
-                else {
-                  reject("Error: while trying to generate codigo value");
-                  cb();
-                }
-              });
-            }
-          }
-          else {
-            reject("Error: while trying to generate id value");
-            cb();
-          }   
-        });
-      }
-      else {
-        cb();
-      }
-    };
+    modelName = form_panel.store_array[0].getModel().getName();
+    tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
 
     if (form_panel.getItemId() === 'form') {
       form = form_panel;  
@@ -484,17 +445,69 @@ var f_crud = {
     else {
       form = form_panel.down('#form');
     }
-    recordsToAdd = form_panel.down("#addinggrid").store.data.items;
-    async.eachSeries(recordsToAdd, saveRecord, function(){ 
-      f_crud.close_form(form_panel);
-      if (MyApp.estado_sinc !== 'PENDIENTE') {
-        MyApp.estado_sinc = 'PENDIENTE' ;
-        // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
-        // f_sinc.defer_sinc();     
+    
+    for (var i = gridRecs.length - 1; i >= 0; i--) {
+      if(gridRecs[i].data.agregar) {
+        recordsToAdd.push(gridRecs[i]);
       }
-    });
-  },
+    }
 
+    len = recordsToAdd.length;
+
+    f_crud.secuencia(function(genMaxId) {
+      if(genMaxId > -1) {
+        f_crud.get_codigos(tableName, len, function(genMaxCod) {
+          if(genMaxCod > -1) {
+            // magic happens here.. 
+            var newrecord, newRecordValues = {}, maxId = genMaxId, maxCod = genMaxCod, gridRecord;
+            for (var i = len - 1; i >= 0; i--) {
+              gridRecord = recordsToAdd[i];
+
+              // identifiers
+              newrecord = Ext.create(form_panel.model_name);
+              newrecord.set('id', maxId);
+              newrecord.set('codigo', maxCod);
+
+              // record DATA
+              
+              newRecordValues[config.gridRecordPK] = gridRecord.data.codigo;
+              newRecordValues[config.pivotPK] = form_panel.parent.codigo;
+              newRecordValues.nombre = gridRecord.data.nombre + "(" + form_panel.parent.nombre + ")";
+
+              // set record DATA
+              newrecord.set(newRecordValues);
+
+              // adding record
+              store_array[0].add(newrecord);
+
+              // next identifiers
+              maxId--;
+              maxCod--;
+            }
+
+            // saving store
+            
+            f_crud.save_stores(store_array, function(rtn){
+              if (rtn > -1) {
+                f_crud.close_form(form_panel);
+                console.log("Worked ok!");
+              }
+              else {
+                reject("Error: while trying to save record");
+              }
+            });
+          }
+          else {
+            reject("Error: while trying to generate codigo value");
+          }
+        });
+      }
+      else {
+        reject("Error: while trying to generate id value");
+      }
+    }, len);  
+  },
+  
   save_form: function(form_panel) {
     var store_array = form_panel.store_array, form, record;
     if (form_panel.getItemId()==='form') {
@@ -681,14 +694,37 @@ var f_crud = {
 
   get_codigo: function(record, callback){
     // Obtengo siguiente codigo 
-    var modelName = record.self.getName();
-    var table_name = modelName.slice(modelName.lastIndexOf('.') + 1);
-    var db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
-    var sql = 'SELECT max(codigo) as codigo FROM ' + table_name ;
+    var modelName = record.self.getName(), table_name, db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024), sql;
+    table_name = modelName.slice(modelName.lastIndexOf('.') + 1);
+
+    sql = 'SELECT max(codigo) as codigo FROM ' + table_name ;
     db.transaction(function (tx) {
       tx.executeSql(sql, [], function (tx, results) {
         var maxcodigo = Number(results.rows.item(0).codigo)+1;
         if(typeof callback == 'function') callback(maxcodigo); 
+      });
+    }, f_fail, f_success);
+    function f_success() { }
+    function f_fail() { 
+      f_crud.mensaje('Error','Se produjo un error al generar el nuevo Código - SQL:' + sql);
+    }        
+  },
+
+  get_codigos: function(table, cantidad, callback){
+    // Obtengo siguiente/s codigo/s 
+    var  maxcodigo, sql,
+    db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
+
+    var sql = 'SELECT max(codigo) as codigo FROM ' + table;
+    db.transaction(function (tx) {
+      tx.executeSql(sql, [], function (tx, results) {
+        if(cantidad) {
+          maxcodigo = Number(results.rows.item(0).codigo) + cantidad;
+        }
+        else {
+          maxcodigo = Number(results.rows.item(0).codigo) + 1;
+        }
+        if(typeof callback === 'function') callback(maxcodigo);
       });
     }, f_fail, f_success);
     function f_success() { }
