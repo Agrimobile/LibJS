@@ -509,6 +509,7 @@ var f_crud = {
   },
   
   save_form: function(form_panel) {
+    debugger;
     var store_array = form_panel.store_array, form, record;
     if (form_panel.getItemId()==='form') {
       form = form_panel;  
