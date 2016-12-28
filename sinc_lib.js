@@ -58,6 +58,7 @@ f_sinc = {
 		var contador = 0;
 		
 		function f_sinc_tabla(store_name,tabla){
+			debugger;
 			if (panel) {
 				panel.down('#tabla').setValue(tabla + ' ('+contador+'/'+MyApp.sinc_array_store.length+')');
 			}

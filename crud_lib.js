@@ -132,6 +132,7 @@ var f_crud = {
   
   // Genera el siguiente Id en la tabla secuencia, [cantidad] se usa para aumentar mas de 1.
   secuencia_mysql: function(cantidad, callback){
+    debugger;
     if (!cantidad) var cantidad = 0;
     //Ext.Ajax.setTimeout(10000); // 10 seconds
     Ext.Ajax.request({
