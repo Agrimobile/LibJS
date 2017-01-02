@@ -92,6 +92,7 @@ var f_crud = {
   // Si alguna falla, aborta todas las ordenes. 
   save_mysql_array: function(array, callback) {
     //---- Get data in json format
+    // debugger;
     var data = '' ;
     data = '{"records":' + JSON.stringify(array) + '}';
     console.log(data);
@@ -591,8 +592,8 @@ var f_crud = {
           record.set('estado_registro','M');
         }
       }
-      if (sincronizar === 'subir' && record.sql_alias){
-        sql_table = record.sql_alias;  
+      if (sincronizar === 'subir' && record.aliasSQL){
+        sql_table = record.aliasSQL;  
       }
       sql     = 'Update '+sql_table+' set ';
       var fields = record.getFields();
@@ -601,7 +602,7 @@ var f_crud = {
         field = fields[i];
         name = field.getName();
         alias = name;
-        if(field.sql_alias)  alias = field.sql_alias;            
+        if(field.aliasSQL)  alias = field.aliasSQL;            
 
         if (field.sincronizar === false) name = null;
         
@@ -634,8 +635,8 @@ var f_crud = {
     for (i in records) {
       record = records[i];
       if (sincronizar !== 'bajar') record.set('estado_registro','A');
-      if (sincronizar === 'subir' && record.sql_alias){
-        sql_table = record.sql_alias;  
+      if (sincronizar === 'subir' && record.aliasSQL){
+        sql_table = record.aliasSQL;  
         console.log('sql_table',sql_table);
       }
       sql = 'Insert into ' + sql_table + ' ';
@@ -649,7 +650,7 @@ var f_crud = {
         name = field.getName();
         alias = name;
         if (sincronizar === 'subir'){
-          if(field.sql_alias) alias = field.sql_alias;
+          if(field.aliasSQL) alias = field.aliasSQL;
           if(field.sincronizar === false) name = null;
         }
         if (record.get(name) ){
@@ -678,8 +679,8 @@ var f_crud = {
     sql = '';
     for (i in records) {
       record = records[i];
-       if (sincronizar === 'subir' && record.sql_alias){
-        sql_table = record.sql_alias;  
+       if (sincronizar === 'subir' && record.aliasSQL){
+        sql_table = record.aliasSQL;  
       }
       sql = 'Delete from '+sql_table+' where id='+record.get('id');
       if (record.get('estado_registro') !=='A') {
