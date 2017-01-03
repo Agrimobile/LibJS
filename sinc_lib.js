@@ -228,7 +228,6 @@ f_sinc = {
               f_crud.sql_command("Delete from Registros_borrados where Upper(tabla)='"+tabla.toUpperCase()+"'");
 
               if (tabla==='Labores') {
-                debugger;
                 f_crud.sql_commands(labores_sql_array, function(rtn) {
                   console.log('update id_labores... =',rtn);
                 });
