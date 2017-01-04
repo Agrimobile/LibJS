@@ -576,6 +576,7 @@ var f_crud = {
   },
 
   get_sql_commands: function(store, sql_array, sincronizar) {
+
     var record, name, alias,
     sql = '',sql_log = '',
     // Get Table name in model
@@ -597,25 +598,29 @@ var f_crud = {
       }
       sql     = 'Update '+sql_table+' set ';
       var fields = record.getFields();
-      var field ='';
+      var field = '';
       for (var i = 0; i < fields.length; i++) {  
         field = fields[i];
         name = field.getName();
         alias = name;
-        if(field.aliasSQL)  alias = field.aliasSQL;            
-
-        if (field.sincronizar === false) name = null;
+        if (field.aliasSQL && sincronizar === 'subir') {
+          alias = field.aliasSQL;
+        }
+        
+        if (field.sincronizar === false) {
+          name = null;
+        } //??
         
         if (record.get(name)){ 
-          if (name === 'estado_registro' && sincronizar == 'subir'){
+          if (name === 'estado_registro' && sincronizar === 'subir'){
             // No agrega este campo.
           }else{
             if (field.getType().type === 'date') {
               sql = sql + alias + " = '" + Ext.Date.format( record.get(name), "Y-m-d" ) +"', ";
             } else if (field.getType().type === 'int' || field.getType().type === 'float') {
-              sql = sql + alias + " = " + record.get(name) +", ";            
+              sql = sql + alias + " = " + record.get(name) + ", ";            
             } else {
-              sql = sql + alias + " = '" + record.get(name) +"', ";
+              sql = sql + alias + " = '" + record.get(name) + "', ";
             }                      
           } 
         }        
