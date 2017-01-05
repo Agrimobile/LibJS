@@ -36,7 +36,7 @@ var f_crud = {
   
   // Carga un store desde una tabla MySql, usando su estrura para contruir la orden SQL 
   // Si se pasa el parametro [sql_command] ejecuta la orden SQL "Select..." sin tener en cuenta la estructura del store. 
-  load_mysql_store: function(store_name, sql_command, callback) {   
+  load_mysql_store: function(store_name, sql_command, callback) {
     var store = Ext.getStore(store_name);
     var record = Ext.create(store.getProxy().getModel().getName());
     // Extraigo campos del modelo
@@ -614,7 +614,8 @@ var f_crud = {
         if (record.get(name)){ 
           if (name === 'estado_registro' && sincronizar === 'subir'){
             // No agrega este campo.
-          }else{
+          }
+          else{
             if (field.getType().type === 'date') {
               sql = sql + alias + " = '" + Ext.Date.format( record.get(name), "Y-m-d" ) +"', ";
             } else if (field.getType().type === 'int' || field.getType().type === 'float') {
@@ -639,8 +640,11 @@ var f_crud = {
     var sql_values = '';
     for (i in records) {
       record = records[i];
-      if (sincronizar !== 'bajar') record.set('estado_registro','A');
-      if (sincronizar === 'subir' && record.aliasSQL){
+      if (sincronizar !== 'bajar') {
+        record.set('estado_registro','A');
+      }
+
+      if (sincronizar === 'subir' && record.aliasSQL) {
         sql_table = record.aliasSQL;  
         console.log('sql_table',sql_table);
       }
@@ -659,7 +663,7 @@ var f_crud = {
           if(field.sincronizar === false) name = null;
         }
         if (record.get(name) ){
-          if (name === 'estado_registro' && sincronizar == 'subir'){
+          if (name === 'estado_registro' && sincronizar === 'subir'){
             // No agrega este campo.
           }else{
             sql_fields = sql_fields + alias + ',';
@@ -680,6 +684,7 @@ var f_crud = {
     }
 
     // Delete
+    // debugger;
     records = store.getRemovedRecords();
     sql = '';
     for (i in records) {
@@ -690,7 +695,7 @@ var f_crud = {
       sql = 'Delete from '+sql_table+' where id='+record.get('id');
       if (record.get('estado_registro') !=='A') {
         sql_log = "Insert into Registros_borrados (id_registro,tabla) Values (" + record.get('id') + ",'" + sql_table + "')";
-        // sql_array.push(sql_log);
+        sql_array.push(sql_log);
       }
       sql_array.push(sql);
     }
