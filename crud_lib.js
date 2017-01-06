@@ -259,9 +259,11 @@ var f_crud = {
     db.transaction(function (tx) {
       tx.executeSql(sql, [], function (tx, results) {
         for (var i = 0; i < results.rows.length; i++) {
+          debugger;
           data_array.push(results.rows.item(i));
         }
         store.add(data_array);
+        console.log("cualquier pavada");
       });
     }, f_fail, f_success);
     
