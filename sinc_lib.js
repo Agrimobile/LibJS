@@ -263,7 +263,8 @@ f_sinc = {
             if (rtn===1) {
               store.each(function (item, index, length) {
                   item.phantom = true;
-              });              
+              });
+              //debugger;        
               f_crud.save_stores([store],function(rtn){
                 if (rtn === -1) {
                   console.log('Error al sincronizar tabla:',tabla);
