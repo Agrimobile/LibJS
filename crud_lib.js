@@ -52,8 +52,6 @@ var f_crud = {
     var proxy = store.getProxy();
     proxy.setUrl(MyApp.url_lib + 'crud_lib.php');
     
-    console.log("MyApp.url_lib + 'crud_lib.php'",MyApp.url_lib + 'crud_lib.php');
-    
     var sql_table = proxy.getReader().getRootProperty();
 
     proxy.setExtraParam('base_url', MyApp.base_url);
@@ -69,6 +67,7 @@ var f_crud = {
         proxy.setExtraParam('sql_command', sql_command);
       }
     }
+
     store.load(function(records, operation, success) { 
       if (!success) {
         f_crud.mensaje('Error 1 de lectura en tabla: '+sql_table ,'Controle su conexión a Internet.');      
@@ -92,7 +91,6 @@ var f_crud = {
   // Si alguna falla, aborta todas las ordenes. 
   save_mysql_array: function(array, callback) {
     //---- Get data in json format
-    // debugger;
     var data = '' ;
     data = '{"records":' + JSON.stringify(array) + '}';
     console.log(data);
@@ -616,9 +614,9 @@ var f_crud = {
             // No agrega este campo.
           }
           else{
-            if (field.getType().type === 'date') {
+            if (field.getType() === 'date') {
               sql = sql + alias + " = '" + Ext.Date.format( record.get(name), "Y-m-d" ) +"', ";
-            } else if (field.getType().type === 'int' || field.getType().type === 'float') {
+            } else if (field.getType() === 'int' || field.getType() === 'float') {
               sql = sql + alias + " = " + record.get(name) + ", ";            
             } else {
               sql = sql + alias + " = '" + record.get(name) + "', ";
@@ -638,6 +636,7 @@ var f_crud = {
     sql = '';
     var sql_fields = '';
     var sql_values = '';
+    
     for (i in records) {
       record = records[i];
       if (sincronizar !== 'bajar') {
@@ -654,22 +653,29 @@ var f_crud = {
 
       var fields = record.getFields();
       var field ='';
-      for (var i = 0; i < fields.length; i++) {  
-         field = fields[i];
+      for (var i = 0; i < fields.length; i++) { 
+        field = fields[i];
         name = field.getName();
         alias = name;
-        if (sincronizar === 'subir'){
-          if(field.aliasSQL) alias = field.aliasSQL;
-          if(field.sincronizar === false) name = null;
+        if (sincronizar === 'subir' ){
+          if(field.aliasSQL) {
+            alias = field.aliasSQL;
+          }
+          if(field.sincronizar === false) {
+            name = null;
+          }
         }
+       /* if(sincronizar === 'bajar' && field.aliasSQL) {
+          name = field.aliasSQL;
+        }*/
         if (record.get(name) ){
           if (name === 'estado_registro' && sincronizar === 'subir'){
             // No agrega este campo.
           }else{
             sql_fields = sql_fields + alias + ',';
-            if (field.getType().type === 'date') {
+            if (field.getType() === 'date') {
               sql_values = sql_values + "'" + Ext.Date.format( record.get(name), "Y-m-d" ) + "'," ;
-            } else if (field.getType().type === 'int' || field.getType().type === 'float') {
+            } else if (field.getType() === 'int' || field.getType() === 'float') {
               sql_values = sql_values +  record.get(name) + ',' ;
             } else {  
               sql_values = sql_values + "'" +record.get(name) + "',"; 
@@ -684,7 +690,6 @@ var f_crud = {
     }
 
     // Delete
-    // debugger;
     records = store.getRemovedRecords();
     sql = '';
     for (i in records) {

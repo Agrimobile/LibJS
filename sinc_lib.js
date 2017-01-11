@@ -249,6 +249,7 @@ f_sinc = {
       if(typeof callback == 'function') callback(-1); // Sinc error
       return;
     }
+    
     f_crud.load_mysql_store(store_name,store_tmp.getSql(),function(store){
       if (store === -1) {
         console.log('Error de descarga');
@@ -263,7 +264,8 @@ f_sinc = {
             if (rtn===1) {
               store.each(function (item, index, length) {
                   item.phantom = true;
-              });              
+              });
+              //debugger;        
               f_crud.save_stores([store],function(rtn){
                 if (rtn === -1) {
                   console.log('Error al sincronizar tabla:',tabla);
