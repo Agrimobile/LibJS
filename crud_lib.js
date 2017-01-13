@@ -630,7 +630,6 @@ var f_crud = {
       }
       sql_array.push(sql);
     }
-
     // Insert
     records = store.getNewRecords();
     sql = '';
