@@ -332,54 +332,94 @@ var f_crud = {
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
 
   grid_check_delete: function(grid_panel, checkConfig) {
-    var allowDelete = true, tablesToDelete = [], sqlselect = "", tableConfig, pkFieldName,
-      db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024);
+    var allowDelete = true, tablesToDelete = [], sqlTablesExist = "", sqlSelect = "", tableConfig, pkFieldName,
+      db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024), tablesCreated=[];
 
     if(!Array.isArray(checkConfig)) {
       checkConfig = [checkConfig];
     }
+
+    sqlTablesExist = "SELECT name FROM sqlite_master WHERE type='table' AND (";
+
     for (var i = checkConfig.length - 1; i >= 0; i--) {
-      tableConfig = checkConfig[i];
-      if (!tableConfig.pkName) {
-        pkFieldName = "codigo";
-      }
-      else {
-        pkFieldName = tableConfig.pkName;
-      }
-      sqlselect = sqlselect + "select count(*) as 'Count', '" + tableConfig.table + "' as 'Table' from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
-      if(i>0) {
-        sqlselect = sqlselect + " union ";
+      sqlTablesExist = sqlTablesExist + "name = '" + checkConfig[i].table + "'";
+      if (i > 0 ) {
+        sqlTablesExist = sqlTablesExist + " OR ";
       }
     }
-    
-    // obtiene un count, de cada una de las tablas relacionadas, de los records linkeados al registro que desea borrarse. Si hay uno, allowDelete sera falso. 
+    sqlTablesExist = sqlTablesExist + ")";
     db.transaction(function(tx){
-      tx.executeSql(sqlselect, [], function(tx, result){
+      tx.executeSql(sqlTablesExist, [], function(tx, result){
         for (var i = result.rows.length - 1; i >= 0; i--) {
-          if(result.rows[i].Count > 0 ) {
-            allowDelete = false;
-            tablesToDelete.push(result.rows[i].Table);
-          }
+          tablesCreated.push(result.rows[i].name);
         }
       });
     }, function(e) { //transaction failed cb
       console.log('db.transaction = Fail! - sql statement: ' + e.message); 
     }, function() {  //transaction succeeded cb
-      console.log(tablesToDelete);
-      if(allowDelete) {
-        f_crud.grid_delete(grid_panel);
+      
+      if(tablesCreated.length > 0) {
+        // LAS TABLAS EXISTEN - chequear contenido
+        for (var i = checkConfig.length - 1; i >= 0; i--) {
+          tableConfig = checkConfig[i];
+          if(tablesCreated.indexOf(tableConfig.table) > -1) {
+            if (!tableConfig.pkName) {
+              pkFieldName = "codigo";
+            }
+            else {
+              pkFieldName = tableConfig.pkName;
+            }
+            sqlSelect = sqlSelect + "select count(*) as 'Count', '" + tableConfig.table + "' as 'Table' from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
+            if(i>0) { // glue
+              sqlSelect = sqlSelect + " union ";
+            }
+          }
+        }
+        
+        db.transaction(function(tx){
+          tx.executeSql(sqlSelect, [], function(tx, result){
+            for (var i = result.rows.length - 1; i >= 0; i--) {
+              if(result.rows[i].Count > 0 ) {
+                allowDelete = false;
+                tablesToDelete.push(result.rows[i].Table);
+              }
+            }
+          });
+        }, function(e) { //transaction failed cb
+          console.log('db.transaction = Fail! - sql statement: ' + e.message); 
+        }, function() {  //transaction succeeded cb
+          console.log(tablesToDelete);
+          if(allowDelete) {
+            f_crud.grid_delete(grid_panel);
+          }
+          else {
+            var borrarVinculados = function(btn) {
+              console.log("sos un pancho");
+              console.log(btn);
+            };
+            Ext.Msg.show({
+              title: checkConfig[0].msgTitle,
+              message: checkConfig[0].message,
+              iconCls: 'x-fa fa-warning',
+              buttons:  Ext.Msg.YESNO,
+              buttonText: {
+                yes: 'Ok',
+                no: 'Borrar de todas formas' 
+              },
+              fn: borrarVinculados
+            });
+          }
+        });
+        // Termina el chequeo del contenido.
       }
       else {
-        Ext.Msg.alert({
-          title: checkConfig[0].msgTitle,
-          message: checkConfig[0].message,
-          iconCls: 'x-fa fa-warning',
-          buttons:  Ext.Msg.OK
-        });
+        f_crud.grid_delete(grid_panel);
       }
-    });
 
-  },
+    });
+    // Termina por la existencia de las tablas
+
+  }, // Termina metodo grid_check_delete
 
   grid_delete: function(grid_panel) {
     //if (!grid_panel.down('#grid').record ) return;
