@@ -166,7 +166,7 @@ var f_crud = {
     var data_array = [];    
     db.transaction(function (tx) {
       tx.executeSql(sql);
-    },f_fail,f_success);
+    }, f_fail, f_success);
     
     function f_success() { 
       console.log('db.transaction = Ok ',sql); 
@@ -332,7 +332,7 @@ var f_crud = {
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
 
   grid_check_delete: function(grid_panel, checkConfig) {
-    var allowDelete = true, tablesToDelete = [], sqlTablesExist = "", sqlSelect = "", tableConfig, pkFieldName,
+    var allowDelete = true, sqlTablesToDelete = [], sqlTablesExist = "", sqlSelect = "", tableConfig, pkFieldName,
       db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024), tablesCreated=[];
 
     if(!Array.isArray(checkConfig)) {
@@ -347,6 +347,7 @@ var f_crud = {
         sqlTablesExist = sqlTablesExist + " OR ";
       }
     }
+    
     sqlTablesExist = sqlTablesExist + ")";
     db.transaction(function(tx){
       tx.executeSql(sqlTablesExist, [], function(tx, result){
@@ -370,6 +371,7 @@ var f_crud = {
               pkFieldName = tableConfig.pkName;
             }
             sqlSelect = sqlSelect + "select count(*) as 'Count', '" + tableConfig.table + "' as 'Table' from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
+            sqlTablesToDelete.push("delete from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName]);
             if(i>0) { // glue
               sqlSelect = sqlSelect + " union ";
             }
@@ -381,21 +383,43 @@ var f_crud = {
             for (var i = result.rows.length - 1; i >= 0; i--) {
               if(result.rows[i].Count > 0 ) {
                 allowDelete = false;
-                tablesToDelete.push(result.rows[i].Table);
               }
             }
           });
         }, function(e) { //transaction failed cb
           console.log('db.transaction = Fail! - sql statement: ' + e.message); 
         }, function() {  //transaction succeeded cb
-          console.log(tablesToDelete);
           if(allowDelete) {
             f_crud.grid_delete(grid_panel);
           }
           else {
-            var borrarVinculados = function(btn) {
-              console.log("sos un pancho");
-              console.log(btn);
+            var borrarVinculados =  function(btn) {
+              if(btn === 'yes') {
+                f_crud.sql_commands(sqlTablesToDelete, function(rtn){
+                  if(rtn > 0) {
+                    f_crud.grid_delete(grid_panel, true);  
+                  }
+                  else {
+                    sql_commands("Error: Something went wrong while trying to delete related records");
+                  }
+                });
+              }
+            },
+            borrarVinculadosAlert = function(btn) {
+              console.log("borrarVinculadosAlert-btn: " + btn);
+              if(btn === "no") {
+                Ext.Msg.show({
+                  title: checkConfig[0].msgTitle,
+                  message: 'Se borraran todos los registros relacionados, continuar?',
+                  iconCls: 'x-fa fa-warning',
+                  buttons:  Ext.Msg.YESNO,
+                  buttonText: {
+                    yes: 'Si',
+                    no: 'No' 
+                  },
+                  fn: borrarVinculados
+                });
+              }
             };
             Ext.Msg.show({
               title: checkConfig[0].msgTitle,
@@ -406,13 +430,14 @@ var f_crud = {
                 yes: 'Ok',
                 no: 'Borrar de todas formas' 
               },
-              fn: borrarVinculados
+              fn: borrarVinculadosAlert
             });
           }
         });
         // Termina el chequeo del contenido.
       }
       else {
+        // tablas asociadas no existen
         f_crud.grid_delete(grid_panel);
       }
 
@@ -421,21 +446,11 @@ var f_crud = {
 
   }, // Termina metodo grid_check_delete
 
-  grid_delete: function(grid_panel) {
-    //if (!grid_panel.down('#grid').record ) return;
-    Ext.Msg.show({
-      title:'Borrar registro',
-      message: 'Desea borrar el registro',
-      buttons:  Ext.Msg.YESNO,
-      iconCls: 'x-fa fa-warning',
-      fn: opcion
-    });
-    var store;
-    function opcion(btn) {
+  grid_delete: function(grid_panel, force) {
+    var opcion = function (btn) {
       var store = Ext.getStore(grid_panel.store_name);
       if (btn=='yes'){
         grid_panel.form_store_array[0].remove(grid_panel.record);
-
         if (grid_panel.form_store_array.length > 1) {
           //for (var i in store_array) {
           for (var i=1; i < grid_panel.form_store_array.length ; i++) {
@@ -449,6 +464,18 @@ var f_crud = {
         } 
         f_crud.save_stores(grid_panel.form_store_array);
       }
+    };
+    if(force) {
+      opcion('yes');
+    }
+    else{
+      Ext.Msg.show({
+        title:'Borrar registro',
+        message: 'Desea borrar el registro',
+        buttons:  Ext.Msg.YESNO,
+        iconCls: 'x-fa fa-warning',
+        fn: opcion
+      });
     }
   },
       
