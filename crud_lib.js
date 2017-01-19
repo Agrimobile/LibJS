@@ -273,18 +273,22 @@ var f_crud = {
       if(typeof callback == 'function') callback(store);
     }  
   },
+
+  openNestedForm: function(panelName) {
+    var pantalla = Ext.create('MyApp.view.' + panelName);
+    pantalla.fireEvent("render",pantalla);
+    f_crud.form_open(pantalla,'ADD');
+    pantalla.close();
+    pantalla.destroy();
+  },
     
   form_open: function(grid_panel, action) {
+    
     if (action==='EDIT' && typeof grid_panel.record==='undefined') return;
-    // Open new screen
-    // MyApp.main.down('#estado_editar').setHtml('Editando');
-    // MyApp.main.down('#estado_sinc').setHtml('');
     MyApp.pantalla_anterior = MyApp.main.getLayout().getActiveItem();
     var form_panel = Ext.create(grid_panel.form_name);
-    // MyApp.screen_count++ ;
-    // MyApp.screen_name[MyApp.screen_count] = form_panel;
+    
     MyApp.main.add(form_panel);
-    //MyApp.main.getLayout().setActiveItem(form_panel);
     //---------------
     if(grid_panel.parent) {
       form_panel.parent = grid_panel.parent;
@@ -295,11 +299,13 @@ var f_crud = {
     form_panel.grid_panel = grid_panel.down('#grid');
     form_panel.action = action;
 
-    if (form_panel.getItemId()==='form') {
+    /*if (form_panel.getItemId()==='form') {
       var form = form_panel;  
     } else {
       var form = form_panel.down('#form');
-    }
+    }*/
+    var form = form_panel;
+
     if (action === 'ADD') {
       form_panel.title = 'Agregando';
       var newrecord = Ext.create(form_panel.model_name);    
@@ -327,6 +333,7 @@ var f_crud = {
       }
       MyApp.main.getLayout().setActiveItem(form_panel);
     }
+
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
@@ -480,7 +487,8 @@ var f_crud = {
   },
       
   close_form: function(form) {
-    if (MyApp.main.getLayout().getLayoutItems().length > 1) MyApp.main.getLayout().prev();
+    if (MyApp.main.getLayout().getLayoutItems().length > 1) {MyApp.main.getLayout().prev();
+    }
     form.close();
     // MyApp.main.down('#estado_editar').setHtml('');    
     if (MyApp.estado_sinc === 'PENDIENTE'){
@@ -505,13 +513,13 @@ var f_crud = {
     modelName = form_panel.store_array[0].getModel().getName();
     tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
 
-    if (form_panel.getItemId() === 'form') {
+    /*if (form_panel.getItemId() === 'form') {
       form = form_panel;  
     } 
     else {
       form = form_panel.down('#form');
-    }
-    
+    }*/
+    var form = form_panel;
     for (var i = gridRecs.length - 1; i >= 0; i--) {
       if(gridRecs[i].data.agregar) {
         recordsToAdd.push(gridRecs[i]);
@@ -575,22 +583,29 @@ var f_crud = {
   },
   
   save_form: function(form_panel) {
-    var store_array = form_panel.store_array, form, record;
-    if (form_panel.getItemId()==='form') {
-      form = form_panel;  
-    }
-    else {
-      form = form_panel.down('#form');
-    }
+    var store_array = form_panel.store_array, form, record,
+        form = form_panel 
+    
     record = form.getRecord();
     record.set(form.getValues());  
     if (form_panel.action === 'ADD') {
       store_array[0].add(record);
-      form_panel.grid_panel.getSelectionModel().select(record);
+      if(form_panel.grid_panel.viewConfig) { // TODO: encontrar una mejor forma de hacer este control.
+        form_panel.grid_panel.getSelectionModel().select(record);
+      }
+      else {
+        if(MyApp.pantalla_anterior.initialCls === "formpanel" && MyApp.pantalla_anterior.dropdownId) {
+          var ddf = MyApp.pantalla_anterior.dropdownId;
+          var dd = MyApp.pantalla_anterior.down("#" + ddf);
+          dd.setValue(form_panel.getValues().codigo); 
+        }
+        
+      }
     }
     f_crud.save_stores( store_array,function(rtn){
       if (rtn === -1) {
-        alert('Error durante la grabación ');}
+        alert('Error durante la grabación ');
+      }
       else {
         var modelName, sql_table;
         for (i in store_array){
