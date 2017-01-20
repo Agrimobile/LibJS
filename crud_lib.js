@@ -307,7 +307,7 @@ var f_crud = {
     var form = form_panel;
 
     if (action === 'ADD') {
-      form_panel.title = 'Agregando';
+      
       var newrecord = Ext.create(form_panel.model_name);    
       f_crud.secuencia(function(rtn){
         if (rtn !== -1) {
@@ -328,7 +328,7 @@ var f_crud = {
     }
     else {
       if (action === 'EDIT') {
-        form_panel.title = 'Editando';
+        
         form.loadRecord(grid_panel.record);
       }
       MyApp.main.getLayout().setActiveItem(form_panel);
@@ -1003,6 +1003,24 @@ var f_crud = {
     }
     else {
       console.log("Error: all the columns were hidden!");
+    }
+  },
+
+  setFormTitle: function(component, fem) {
+    var initTitle = component.initialTitle;
+    if(component.action === 'ADD') {
+      if(fem) {
+        component.setTitle('Nueva ' + initTitle);  
+      }
+      else {
+        component.setTitle('Nuevo ' + initTitle);  
+      }
+    }
+    else if(component.action === 'EDIT') {
+      component.setTitle('Editar ' + initTitle);
+    }
+    else {
+      component.setTitle(initTitle);
     }
   }
 };
