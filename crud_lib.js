@@ -7,15 +7,17 @@ var f_crud = {
   },
 
   mensaje: function(title, msg, tiempo){
-    var mensaje = Ext.create('MyApp.view.Mensaje');
-    mensaje.show();
-    mensaje.f_mensaje(title,msg);
-    if(tiempo > 0 ){
-      Ext.Function.defer(function(){
-        mensaje.close();
-      }, tiempo * 10000);          
-    }
-    f_crud.enviar_msg_error(title+', '+msg);
+    
+    Ext.Msg.show({
+      title: title,
+      width: "80%",
+      message: msg,
+      iconCls: 'x-fa fa-warning',
+      buttons:  Ext.Msg.OK,
+      fn: function(btn) {
+        f_crud.enviar_msg_error(title + ', ' + msg);
+      }
+    });
   }, 
   
   enviar_msg_error: function(msg){
@@ -70,8 +72,8 @@ var f_crud = {
 
     store.load(function(records, operation, success) { 
       if (!success) {
-        f_crud.mensaje('Error 1 de lectura en tabla: '+sql_table ,'Controle su conexión a Internet.');      
-        f_crud.cerrar_mensaje(5);
+        f_crud.mensaje('Error 1 de lectura en tabla: ' + sql_table , 'Controle su conexión a Internet.');      
+        // f_crud.cerrar_mensaje(5);
         if(typeof callback == 'function') callback(-1);        
       }
       if (success && records != null && records !== undefined){
@@ -79,8 +81,8 @@ var f_crud = {
         if (records.length === 0) console.log('Sql:',sql_command);
         if(typeof callback == 'function') callback(store);
       } else {
-        f_crud.mensaje('Error 2 de lectura en tabla: '+sql_table ,'Controle su conexión a Internet.');      
-        f_crud.cerrar_mensaje(5);
+        f_crud.mensaje('Error 2 de lectura en tabla: ' + sql_table , 'Controle su conexión a Internet.');      
+        // f_crud.cerrar_mensaje(5);
         if(typeof callback == 'function') callback(-1);
       };
     });    
@@ -117,13 +119,13 @@ var f_crud = {
           if(typeof callback == 'function') callback(1);
         }
         else {
-          f_crud.mensaje('Error SQL',resp_json.message+ ' - ' +data,5);
+          f_crud.mensaje('Error SQL', resp_json.message + ' -<br>' + data, 5);
           if(typeof callback == 'function') callback(-1);
         }
       },
       failure: function(response, opts) {
-        alert(MyApp.url_lib + 'crud_lib.php'+ '?action=batch');
-        f_crud.mensaje('Error','Error en conexion con el servidor, revise su conexion Internet.  Resp text: '+response.responseText+' Respuesta n: ' +response.status,5);
+        alert(MyApp.url_lib + 'crud_lib.php' + '?action=batch');
+        f_crud.mensaje('Error','Error en conexion con el servidor, revise su conexion Internet.  Resp text: ' + response.responseText + ' Respuesta n: ' + response.status, 5);
         if(typeof callback == 'function') callback(-1);
       }
     });
@@ -492,7 +494,7 @@ var f_crud = {
     form.close();
     // MyApp.main.down('#estado_editar').setHtml('');    
     if (MyApp.estado_sinc === 'PENDIENTE'){
-      // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
+      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
     }
   },
 
@@ -618,7 +620,7 @@ var f_crud = {
     f_crud.close_form(form_panel);
     if (MyApp.estado_sinc !== 'PENDIENTE') {
       MyApp.estado_sinc = 'PENDIENTE' ;
-      // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
+      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
       // f_sinc.defer_sinc();      
     }
   },

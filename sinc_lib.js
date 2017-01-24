@@ -62,12 +62,12 @@ f_sinc = {
         panel.down('#tabla').setValue(tabla + ' ('+contador+'/'+MyApp.sinc_array_store.length+')');
       }
       else{
-        //MyApp.main.down('#estado_sinc').setHtml('Sinc: '+tabla);
+        MyApp.main.down('#estado_sinc').setHtml('Sincronizado: ' + tabla);
       }      
       f_sinc.sincronizar_upload(tabla,tabla,function(rtn){
         if (rtn === -1) {
           Ext.Function.defer(function(){ cerrar_ventana(); }, 3000);
-          // MyApp.main.down('#estado_sinc').setHtml('Sinc Error!');
+          MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Error!');
           f_releer_tablas();
           if (!panel) f_sinc.defer_sinc();;
           return;
@@ -77,7 +77,7 @@ f_sinc = {
           f_sinc.sincronizar_download(store_name,tabla,function(rtn) {
             if (rtn === -1){
               Ext.Function.defer(function(){ cerrar_ventana(); }, 3000);
-              //MyApp.main.down('#estado_sinc').setHtml('Sinc Error!');
+              MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Error!');
               f_releer_tablas();
               if (!panel) f_sinc.defer_sinc();;
               return;
@@ -96,7 +96,7 @@ f_sinc = {
         if (panel) panel.down('#tabla').setValue('SINC. TERMINADA.');
         f_releer_tablas();
         if (panel) Ext.Function.defer(function(){ cerrar_ventana(); }, 2000);
-        //MyApp.main.down('#estado_sinc').setHtml('');
+        MyApp.main.down('#estado_sinc').setHtml('Sincronizado: terminado');
         MyApp.sinc_array_store = [];
         MyApp.sinc_array_tabla = [];
         f_crud.secuencia_mysql(1,function(secuencia) {
@@ -159,7 +159,7 @@ f_sinc = {
     f_crud.load_store(store_name, sql_where, '', function(store){
       if (store === -1) {
         console.log('Error subiendo');
-        f_crud.mensaje('Error en Load sinc tabla:',tabla);
+        f_crud.mensaje('Error en Load sinc tabla:', tabla);
         if(typeof callback == 'function') callback(-1); // Sinc error.
         return;
       }
@@ -205,14 +205,14 @@ f_sinc = {
           f_crud.load_store('Registros_borrados', "Upper(tabla)='" + tabla.toUpperCase() + "'", '', function(store_borrados){
             if (store_borrados === -1) {
               console.log('Error subiendo');
-              f_crud.mensaje('Error:','Error de lectura de registros borrados.',5);
+              f_crud.mensaje('Error:', 'Error de lectura de registros borrados.', 5);
               if(typeof callback == 'function') callback(-1); // Sinc error.
               return;
             }
             var sql_tabla = tabla;
-            var record     = Ext.create(store.getProxy().getModel().getName());
+            var record = Ext.create(store.getProxy().getModel().getName());
             if (record.getInitialConfig('sql_alias')){
-              sql_tabla = record.getInitialConfig('sql_alias');  
+              sql_tabla = record.getInitialConfig('sql_alias');
             }              
             store_borrados.each(function (item, index, length) {
               sql_array.push('Delete from ' + sql_tabla + ' where id='+item.get('id_registro'));
@@ -224,12 +224,12 @@ f_sinc = {
                 return;                
               }
               console.log('dentro rtn',rtn);
-              f_crud.sql_command('Update '+tabla +' set estado_registro=null');
-              f_crud.sql_command("Delete from Registros_borrados where Upper(tabla)='"+tabla.toUpperCase()+"'");
+              f_crud.sql_command('Update '+ tabla +' set estado_registro=null');
+              f_crud.sql_command("Delete from Registros_borrados where Upper(tabla)='" + tabla.toUpperCase() + "'");
 
-              if (tabla==='Labores') {
+              if (tabla === 'Labores') {
                 f_crud.sql_commands(labores_sql_array, function(rtn) {
-                  console.log('update id_labores... =',rtn);
+                  console.log('update id_labores... =', rtn);
                 });
               }
 
@@ -245,7 +245,7 @@ f_sinc = {
   sincronizar_download: function(store_name,tabla,callback){
     var store_tmp = Ext.getStore(store_name);
     if (!store_tmp) {
-      f_crud.mensaje('Error','No existe el datastore: '+store_name+', o no tiene definida una orden SQL',5);
+      f_crud.mensaje('Error', 'No existe el datastore: ' + store_name + ', o no tiene definida una orden SQL', 5);
       if(typeof callback == 'function') callback(-1); // Sinc error
       return;
     }
