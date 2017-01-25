@@ -7,15 +7,17 @@ var f_crud = {
   },
 
   mensaje: function(title, msg, tiempo){
-    var mensaje = Ext.create('MyApp.view.Mensaje');
-    mensaje.show();
-    mensaje.f_mensaje(title,msg);
-    if(tiempo > 0 ){
-      Ext.Function.defer(function(){
-        mensaje.close();
-      }, tiempo * 10000);          
-    }
-    f_crud.enviar_msg_error(title+', '+msg);
+    
+    Ext.Msg.show({
+      title: title,
+      width: "80%",
+      message: msg,
+      iconCls: 'x-fa fa-warning',
+      buttons:  Ext.Msg.OK,
+      fn: function(btn) {
+        f_crud.enviar_msg_error(title + ', ' + msg);
+      }
+    });
   }, 
   
   enviar_msg_error: function(msg){
@@ -70,8 +72,8 @@ var f_crud = {
 
     store.load(function(records, operation, success) { 
       if (!success) {
-        f_crud.mensaje('Error 1 de lectura en tabla: '+sql_table ,'Controle su conexión a Internet.');      
-        f_crud.cerrar_mensaje(5);
+        f_crud.mensaje('Error 1 de lectura en tabla: ' + sql_table , 'Controle su conexión a Internet.');      
+        // f_crud.cerrar_mensaje(5);
         if(typeof callback == 'function') callback(-1);        
       }
       if (success && records != null && records !== undefined){
@@ -79,8 +81,8 @@ var f_crud = {
         if (records.length === 0) console.log('Sql:',sql_command);
         if(typeof callback == 'function') callback(store);
       } else {
-        f_crud.mensaje('Error 2 de lectura en tabla: '+sql_table ,'Controle su conexión a Internet.');      
-        f_crud.cerrar_mensaje(5);
+        f_crud.mensaje('Error 2 de lectura en tabla: ' + sql_table , 'Controle su conexión a Internet.');      
+        // f_crud.cerrar_mensaje(5);
         if(typeof callback == 'function') callback(-1);
       };
     });    
@@ -117,13 +119,13 @@ var f_crud = {
           if(typeof callback == 'function') callback(1);
         }
         else {
-          f_crud.mensaje('Error SQL',resp_json.message+ ' - ' +data,5);
+          f_crud.mensaje('Error SQL', resp_json.message + ' -<br>' + data, 5);
           if(typeof callback == 'function') callback(-1);
         }
       },
       failure: function(response, opts) {
-        alert(MyApp.url_lib + 'crud_lib.php'+ '?action=batch');
-        f_crud.mensaje('Error','Error en conexion con el servidor, revise su conexion Internet.  Resp text: '+response.responseText+' Respuesta n: ' +response.status,5);
+        alert(MyApp.url_lib + 'crud_lib.php' + '?action=batch');
+        f_crud.mensaje('Error','Error en conexion con el servidor, revise su conexion Internet.  Resp text: ' + response.responseText + ' Respuesta n: ' + response.status, 5);
         if(typeof callback == 'function') callback(-1);
       }
     });
@@ -166,7 +168,7 @@ var f_crud = {
     var data_array = [];    
     db.transaction(function (tx) {
       tx.executeSql(sql);
-    },f_fail,f_success);
+    }, f_fail, f_success);
     
     function f_success() { 
       console.log('db.transaction = Ok ',sql); 
@@ -273,18 +275,22 @@ var f_crud = {
       if(typeof callback == 'function') callback(store);
     }  
   },
+
+  openNestedForm: function(panelName) {
+    var pantalla = Ext.create('MyApp.view.' + panelName);
+    pantalla.fireEvent("render",pantalla);
+    f_crud.form_open(pantalla,'ADD');
+    pantalla.close();
+    pantalla.destroy();
+  },
     
   form_open: function(grid_panel, action) {
+    
     if (action==='EDIT' && typeof grid_panel.record==='undefined') return;
-    // Open new screen
-    // MyApp.main.down('#estado_editar').setHtml('Editando');
-    // MyApp.main.down('#estado_sinc').setHtml('');
     MyApp.pantalla_anterior = MyApp.main.getLayout().getActiveItem();
     var form_panel = Ext.create(grid_panel.form_name);
-    // MyApp.screen_count++ ;
-    // MyApp.screen_name[MyApp.screen_count] = form_panel;
+    
     MyApp.main.add(form_panel);
-    //MyApp.main.getLayout().setActiveItem(form_panel);
     //---------------
     if(grid_panel.parent) {
       form_panel.parent = grid_panel.parent;
@@ -295,13 +301,15 @@ var f_crud = {
     form_panel.grid_panel = grid_panel.down('#grid');
     form_panel.action = action;
 
-    if (form_panel.getItemId()==='form') {
+    /*if (form_panel.getItemId()==='form') {
       var form = form_panel;  
     } else {
       var form = form_panel.down('#form');
-    }
+    }*/
+    var form = form_panel;
+
     if (action === 'ADD') {
-      form_panel.title = 'Agregando';
+      
       var newrecord = Ext.create(form_panel.model_name);    
       f_crud.secuencia(function(rtn){
         if (rtn !== -1) {
@@ -322,80 +330,136 @@ var f_crud = {
     }
     else {
       if (action === 'EDIT') {
-        form_panel.title = 'Editando';
+        
         form.loadRecord(grid_panel.record);
       }
       MyApp.main.getLayout().setActiveItem(form_panel);
     }
+
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
 
   grid_check_delete: function(grid_panel, checkConfig) {
-    var allowDelete = true, tablesToDelete = [], sqlselect = "", tableConfig, pkFieldName,
-      db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024);
+    var allowDelete = true, sqlTablesToDelete = [], sqlTablesExist = "", sqlSelect = "", tableConfig, pkFieldName,
+      db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 5 * 1024 * 1024), tablesCreated=[];
 
     if(!Array.isArray(checkConfig)) {
       checkConfig = [checkConfig];
     }
+
+    sqlTablesExist = "SELECT name FROM sqlite_master WHERE type='table' AND (";
+
     for (var i = checkConfig.length - 1; i >= 0; i--) {
-      tableConfig = checkConfig[i];
-      if (!tableConfig.pkName) {
-        pkFieldName = "codigo";
-      }
-      else {
-        pkFieldName = tableConfig.pkName;
-      }
-      sqlselect = sqlselect + "select count(*) as 'Count', '" + tableConfig.table + "' as 'Table' from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
-      if(i>0) {
-        sqlselect = sqlselect + " union ";
+      sqlTablesExist = sqlTablesExist + "name = '" + checkConfig[i].table + "'";
+      if (i > 0 ) {
+        sqlTablesExist = sqlTablesExist + " OR ";
       }
     }
     
-    // obtiene un count, de cada una de las tablas relacionadas, de los records linkeados al registro que desea borrarse. Si hay uno, allowDelete sera falso. 
+    sqlTablesExist = sqlTablesExist + ")";
     db.transaction(function(tx){
-      tx.executeSql(sqlselect, [], function(tx, result){
+      tx.executeSql(sqlTablesExist, [], function(tx, result){
         for (var i = result.rows.length - 1; i >= 0; i--) {
-          if(result.rows[i].Count > 0 ) {
-            allowDelete = false;
-            tablesToDelete.push(result.rows[i].Table);
-          }
+          tablesCreated.push(result.rows[i].name);
         }
       });
     }, function(e) { //transaction failed cb
       console.log('db.transaction = Fail! - sql statement: ' + e.message); 
     }, function() {  //transaction succeeded cb
-      console.log(tablesToDelete);
-      if(allowDelete) {
-        f_crud.grid_delete(grid_panel);
+      
+      if(tablesCreated.length > 0) {
+        // LAS TABLAS EXISTEN - chequear contenido
+        for (var i = checkConfig.length - 1; i >= 0; i--) {
+          tableConfig = checkConfig[i];
+          if(tablesCreated.indexOf(tableConfig.table) > -1) {
+            if (!tableConfig.pkName) {
+              pkFieldName = "codigo";
+            }
+            else {
+              pkFieldName = tableConfig.pkName;
+            }
+            sqlSelect = sqlSelect + "select count(*) as 'Count', '" + tableConfig.table + "' as 'Table' from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName];
+            sqlTablesToDelete.push("delete from " + tableConfig.table + " where " + tableConfig.field + "=" + grid_panel.record.data[pkFieldName]);
+            if(i>0) { // glue
+              sqlSelect = sqlSelect + " union ";
+            }
+          }
+        }
+        
+        db.transaction(function(tx){
+          tx.executeSql(sqlSelect, [], function(tx, result){
+            for (var i = result.rows.length - 1; i >= 0; i--) {
+              if(result.rows[i].Count > 0 ) {
+                allowDelete = false;
+              }
+            }
+          });
+        }, function(e) { //transaction failed cb
+          console.log('db.transaction = Fail! - sql statement: ' + e.message); 
+        }, function() {  //transaction succeeded cb
+          if(allowDelete) {
+            f_crud.grid_delete(grid_panel);
+          }
+          else {
+            var borrarVinculados =  function(btn) {
+              if(btn === 'yes') {
+                f_crud.sql_commands(sqlTablesToDelete, function(rtn){
+                  if(rtn > 0) {
+                    f_crud.grid_delete(grid_panel, true);  
+                  }
+                  else {
+                    sql_commands("Error: Something went wrong while trying to delete related records");
+                  }
+                });
+              }
+            },
+            borrarVinculadosAlert = function(btn) {
+              console.log("borrarVinculadosAlert-btn: " + btn);
+              if(btn === "no") {
+                Ext.Msg.show({
+                  title: checkConfig[0].msgTitle,
+                  message: 'Se borraran todos los registros relacionados, continuar?',
+                  iconCls: 'x-fa fa-warning',
+                  buttons:  Ext.Msg.YESNO,
+                  buttonText: {
+                    yes: 'Si',
+                    no: 'No' 
+                  },
+                  fn: borrarVinculados
+                });
+              }
+            };
+            Ext.Msg.show({
+              title: checkConfig[0].msgTitle,
+              message: checkConfig[0].message,
+              iconCls: 'x-fa fa-warning',
+              buttons:  Ext.Msg.YESNO,
+              buttonText: {
+                yes: 'Ok',
+                no: 'Borrar de todas formas' 
+              },
+              fn: borrarVinculadosAlert
+            });
+          }
+        });
+        // Termina el chequeo del contenido.
       }
       else {
-        Ext.Msg.alert({
-          title: checkConfig[0].msgTitle,
-          message: checkConfig[0].message,
-          iconCls: 'x-fa fa-warning',
-          buttons:  Ext.Msg.OK
-        });
+        // tablas asociadas no existen
+        f_crud.grid_delete(grid_panel);
       }
-    });
 
-  },
-
-  grid_delete: function(grid_panel) {
-    //if (!grid_panel.down('#grid').record ) return;
-    Ext.Msg.show({
-      title:'Borrar registro',
-      message: 'Desea borrar el registro',
-      buttons:  Ext.Msg.YESNO,
-      iconCls: 'x-fa fa-warning',
-      fn: opcion
     });
-    var store;
-    function opcion(btn) {
+    // Termina por la existencia de las tablas
+
+  }, // Termina metodo grid_check_delete
+
+  grid_delete: function(grid_panel, force) {
+    var opcion = function (btn) {
       var store = Ext.getStore(grid_panel.store_name);
       if (btn=='yes'){
         grid_panel.form_store_array[0].remove(grid_panel.record);
-
         if (grid_panel.form_store_array.length > 1) {
           //for (var i in store_array) {
           for (var i=1; i < grid_panel.form_store_array.length ; i++) {
@@ -409,15 +473,28 @@ var f_crud = {
         } 
         f_crud.save_stores(grid_panel.form_store_array);
       }
+    };
+    if(force) {
+      opcion('yes');
+    }
+    else{
+      Ext.Msg.show({
+        title:'Borrar registro',
+        message: 'Desea borrar el registro',
+        buttons:  Ext.Msg.YESNO,
+        iconCls: 'x-fa fa-warning',
+        fn: opcion
+      });
     }
   },
       
   close_form: function(form) {
-    if (MyApp.main.getLayout().getLayoutItems().length > 1) MyApp.main.getLayout().prev();
+    if (MyApp.main.getLayout().getLayoutItems().length > 1) {MyApp.main.getLayout().prev();
+    }
     form.close();
     // MyApp.main.down('#estado_editar').setHtml('');    
     if (MyApp.estado_sinc === 'PENDIENTE'){
-      // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
+      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
     }
   },
 
@@ -438,13 +515,13 @@ var f_crud = {
     modelName = form_panel.store_array[0].getModel().getName();
     tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
 
-    if (form_panel.getItemId() === 'form') {
+    /*if (form_panel.getItemId() === 'form') {
       form = form_panel;  
     } 
     else {
       form = form_panel.down('#form');
-    }
-    
+    }*/
+    var form = form_panel;
     for (var i = gridRecs.length - 1; i >= 0; i--) {
       if(gridRecs[i].data.agregar) {
         recordsToAdd.push(gridRecs[i]);
@@ -508,22 +585,29 @@ var f_crud = {
   },
   
   save_form: function(form_panel) {
-    var store_array = form_panel.store_array, form, record;
-    if (form_panel.getItemId()==='form') {
-      form = form_panel;  
-    }
-    else {
-      form = form_panel.down('#form');
-    }
+    var store_array = form_panel.store_array, form, record,
+        form = form_panel 
+    
     record = form.getRecord();
     record.set(form.getValues());  
     if (form_panel.action === 'ADD') {
       store_array[0].add(record);
-      form_panel.grid_panel.getSelectionModel().select(record);
+      if(form_panel.grid_panel.viewConfig) { // TODO: encontrar una mejor forma de hacer este control.
+        form_panel.grid_panel.getSelectionModel().select(record);
+      }
+      else {
+        if(MyApp.pantalla_anterior.initialCls === "formpanel" && MyApp.pantalla_anterior.dropdownId) {
+          var ddf = MyApp.pantalla_anterior.dropdownId;
+          var dd = MyApp.pantalla_anterior.down("#" + ddf);
+          dd.setValue(form_panel.getValues().codigo); 
+        }
+        
+      }
     }
     f_crud.save_stores( store_array,function(rtn){
       if (rtn === -1) {
-        alert('Error durante la grabación ');}
+        alert('Error durante la grabación ');
+      }
       else {
         var modelName, sql_table;
         for (i in store_array){
@@ -536,7 +620,7 @@ var f_crud = {
     f_crud.close_form(form_panel);
     if (MyApp.estado_sinc !== 'PENDIENTE') {
       MyApp.estado_sinc = 'PENDIENTE' ;
-      // MyApp.main.down('#estado_sinc').setHtml('Sinc: Pendiente');
+      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
       // f_sinc.defer_sinc();      
     }
   },
@@ -921,6 +1005,24 @@ var f_crud = {
     }
     else {
       console.log("Error: all the columns were hidden!");
+    }
+  },
+
+  setFormTitle: function(component, fem) {
+    var initTitle = component.initialTitle;
+    if(component.action === 'ADD') {
+      if(fem) {
+        component.setTitle('Nueva ' + initTitle);  
+      }
+      else {
+        component.setTitle('Nuevo ' + initTitle);  
+      }
+    }
+    else if(component.action === 'EDIT') {
+      component.setTitle('Editar ' + initTitle);
+    }
+    else {
+      component.setTitle(initTitle);
     }
   }
 };
