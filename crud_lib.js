@@ -279,6 +279,7 @@ var f_crud = {
   openNestedForm: function(panelName) {
     var pantalla = Ext.create('MyApp.view.' + panelName);
     pantalla.fireEvent("render",pantalla);
+    debugger;
     f_crud.form_open(pantalla,'ADD');
     pantalla.close();
     pantalla.destroy();
@@ -404,12 +405,12 @@ var f_crud = {
           else {
             var borrarVinculados =  function(btn) {
               if(btn === 'yes') {
-                f_crud.sql_commands(sqlTablesToDelete, function(rtn){
+                f_crud.sql_commands(sqlTablesToDelete, function(rtn) {
                   if(rtn > 0) {
                     f_crud.grid_delete(grid_panel, true);  
                   }
                   else {
-                    sql_commands("Error: Something went wrong while trying to delete related records");
+                    console.log("Error: algo salio mal cuando se intento los registros vinculados");
                   }
                 });
               }

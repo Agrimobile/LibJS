@@ -122,9 +122,12 @@ f_sinc = {
         f_crud.load_store(MyApp.sinc_array_tabla[i]);
       }
     }
+
     function cerrar_ventana() {
-      MyApp.screen_count-- ;
-      MyApp.main.setActiveItem( MyApp.screen_name[MyApp.screen_count] );
+      var lay = MyApp.main.getLayout();
+      if(lay.getPrev()){
+        lay.prev();
+      }
     }
 
     f_chec_table();
