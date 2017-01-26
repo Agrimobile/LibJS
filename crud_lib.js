@@ -279,20 +279,19 @@ var f_crud = {
   openNestedForm: function(panelName) {
     var pantalla = Ext.create('MyApp.view.' + panelName);
     pantalla.fireEvent("render",pantalla);
-    debugger;
     f_crud.form_open(pantalla,'ADD');
     pantalla.close();
     pantalla.destroy();
   },
     
   form_open: function(grid_panel, action) {
-    
-    if (action==='EDIT' && typeof grid_panel.record==='undefined') return;
-    MyApp.pantalla_anterior = MyApp.main.getLayout().getActiveItem();
     var form_panel = Ext.create(grid_panel.form_name);
     
+    if (action==='EDIT' && typeof grid_panel.record==='undefined') return;
+    
+    MyApp.pantalla_anterior = MyApp.main.getLayout().getActiveItem();
     MyApp.main.add(form_panel);
-    //---------------
+
     if(grid_panel.parent) {
       form_panel.parent = grid_panel.parent;
     }
@@ -302,27 +301,20 @@ var f_crud = {
     form_panel.grid_panel = grid_panel.down('#grid');
     form_panel.action = action;
 
-    /*if (form_panel.getItemId()==='form') {
-      var form = form_panel;  
-    } else {
-      var form = form_panel.down('#form');
-    }*/
-    var form = form_panel;
-
     if (action === 'ADD') {
       
       var newrecord = Ext.create(form_panel.model_name);    
       f_crud.secuencia(function(rtn){
         if (rtn !== -1) {
           newrecord.set('id', rtn);
-          form.loadRecord(newrecord);
+          form_panel.loadRecord(newrecord);
           if (typeof newrecord.get('codigo') === 'undefined') {
             MyApp.main.getLayout().setActiveItem(form_panel);
           } 
           else {
             f_crud.get_codigo(newrecord,function(rtn) {
               newrecord.set('codigo', rtn)
-              form.loadRecord(newrecord);
+              form_panel.loadRecord(newrecord);
               MyApp.main.getLayout().setActiveItem(form_panel);
             });
           }          
@@ -331,12 +323,10 @@ var f_crud = {
     }
     else {
       if (action === 'EDIT') {
-        
-        form.loadRecord(grid_panel.record);
+        form_panel.loadRecord(grid_panel.record);
       }
       MyApp.main.getLayout().setActiveItem(form_panel);
     }
-
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
@@ -510,26 +500,11 @@ var f_crud = {
   */
 
   save_several_records: function(form_panel, config) {
-    var recordsToAdd = [], gridRecs = form_panel.down("#addinggrid").store.data.items,
-      store_array = form_panel.store_array, form, len, modelName, tableName;
-
-    modelName = form_panel.store_array[0].getModel().getName();
-    tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
-
-    /*if (form_panel.getItemId() === 'form') {
-      form = form_panel;  
-    } 
-    else {
-      form = form_panel.down('#form');
-    }*/
-    var form = form_panel;
-    for (var i = gridRecs.length - 1; i >= 0; i--) {
-      if(gridRecs[i].data.agregar) {
-        recordsToAdd.push(gridRecs[i]);
-      }
-    }
-
-    len = recordsToAdd.length;
+    var recordsToAdd = form_panel.down("#addinggrid").getSelection(),
+        store_array = form_panel.store_array, 
+        len = recordsToAdd.length, 
+        modelName = store_array[0].getModel().getName(),
+        tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
 
     f_crud.secuencia(function(genMaxId) {
       if(genMaxId > -1) {
@@ -586,11 +561,10 @@ var f_crud = {
   },
   
   save_form: function(form_panel) {
-    var store_array = form_panel.store_array, form, record,
-        form = form_panel 
-    
-    record = form.getRecord();
-    record.set(form.getValues());  
+    var store_array = form_panel.store_array,
+        record = form_panel.getRecord();
+        
+    record.set(form_panel.getValues());  
     if (form_panel.action === 'ADD') {
       store_array[0].add(record);
       if(form_panel.grid_panel.viewConfig) { // TODO: encontrar una mejor forma de hacer este control.
