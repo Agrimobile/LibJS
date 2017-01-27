@@ -228,11 +228,11 @@ var f_crud = {
   },
   
   load_store: function(store_name, sql_where, sql_command, callback) {
-    var store = Ext.getStore(store_name);
-    var record = Ext.create(store.getProxy().getModel().getName());
+    var store = Ext.getStore(store_name),
+        record = Ext.create(store.getProxy().getModel().getName()),
     // Extract fields in model
-    var sql_fields = '';  
-    var fields = record.getFields(); 
+        sql_fields = '',  
+        fields = record.getFields(); 
 
     for (var i = 0; i < fields.length; i++) {
       sql_fields = sql_fields + fields[i].getName() + ',';
