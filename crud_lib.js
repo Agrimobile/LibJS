@@ -807,7 +807,7 @@ var f_crud = {
     }        
   },
   
-  get_max_id: function(record){
+  get_max_id: function(record) {
     var modelName = record.self.getName();
     var table_name = modelName.slice(modelName.lastIndexOf('.') + 1);
     var db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
@@ -823,6 +823,22 @@ var f_crud = {
       f_crud.mensaje('Error', 'Se produjo un error al generar el nuevo ID - SQL:'+sql);
     }    
   }, 
+
+  checkSecuencia: function() {
+    //----- controlo que exista un registro en secuencia
+    var sql ='select count(id) as cant from secuencia';
+    var me = this;
+    me.load_store('Secuencia','','',function(rtn) {
+      me.sql_select(sql,function(array) {
+        var cant = array[0].cant;
+        if (cant===0) {
+          me.sql_command('Insert into secuencia (id,secuencia) values (1,1)', function(rtn){
+            console.log('Insert en tabla secuencia = ',rtn);
+          } );
+        }
+      });
+    });
+  },
 
   secuencia: function(callback, cantidad) {
     if (!cantidad) var cantidad = 0;

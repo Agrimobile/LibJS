@@ -56,6 +56,7 @@ f_sinc = {
   
   sincronizar: function(panel){
     var contador = 0;
+    f_crud.checkSecuencia();
     
     function f_sinc_tabla(store_name,tabla) {
       if (panel) {
