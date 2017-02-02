@@ -562,9 +562,23 @@ var f_crud = {
   
   save_form: function(form_panel) {
     var store_array = form_panel.store_array,
-        record = form_panel.getRecord();
-        
-    record.set(form_panel.getValues());  
+        record = form_panel.getRecord(),
+        values = form_panel.getValues(),
+        invalidDateRegEx = /^(3[0-1]|[1-2][0-9]|0[1-9])\-(1[0-2]|0[1-9])\-(\d{4})$/i;  
+    record.set(values);
+    
+    // check dates: itera sobre las propiedades del nuevo record, 
+    // si encuentra una fecha y esta en d-m-Y, la convierte a Y-m-d
+    for(property in values) {
+      var invalidDate = String(values[property]).match(invalidDateRegEx);
+      if(invalidDate){
+        var newDateStr = invalidDate[3] + "-" + invalidDate[2] + "-" + invalidDate[1],
+            newDateObj = {};
+        newDateObj[property] = newDateStr;
+        record.set(newDateObj);
+      }
+    }
+
     if (form_panel.action === 'ADD') {
       store_array[0].add(record);
       if(form_panel.grid_panel.viewConfig) { // TODO: encontrar una mejor forma de hacer este control.
