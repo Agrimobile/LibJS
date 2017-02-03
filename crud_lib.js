@@ -393,7 +393,9 @@ var f_crud = {
             f_crud.grid_delete(grid_panel);
           }
           else {
-            var borrarVinculados =  function(btn) {
+
+            // CODIGO PARA 'BORRAR DE TODAS FORMAS'
+            /*var borrarVinculados =  function(btn) {
               if(btn === 'yes') {
                 f_crud.sql_commands(sqlTablesToDelete, function(rtn) {
                   if(rtn > 0) {
@@ -431,6 +433,14 @@ var f_crud = {
                 no: 'Borrar de todas formas' 
               },
               fn: borrarVinculadosAlert
+            });*/
+
+            // CODIGO PARA 'NO BORRAR DE TODAS FORMAS'
+            Ext.Msg.show({
+              title: checkConfig[0].msgTitle,
+              message: checkConfig[0].message,
+              iconCls: 'x-fa fa-warning',
+              buttons:  Ext.Msg.OK
             });
           }
         });
@@ -489,7 +499,8 @@ var f_crud = {
     }
   },
 
-  /* mientras que save_form toma el record generado por el form, y lo inserta en la tabla, save_several_records 
+  /* 
+    Mientras que save_form toma el record generado por el form, y lo inserta en la tabla, save_several_records 
     loopeara sobre los records de una grilla y los irá insertando (TIENE QUE SER SECUENCIAL, ya que cada registro
     necesita generar una nueva clave) - config should have the name of the pivot pk and the name of the recordsPk, like
     
@@ -564,7 +575,8 @@ var f_crud = {
     var store_array = form_panel.store_array,
         record = form_panel.getRecord(),
         values = form_panel.getValues(),
-        invalidDateRegEx = /^(3[0-1]|[1-2][0-9]|0[1-9])\-(1[0-2]|0[1-9])\-(\d{4})$/i;  
+        invalidDateRegEx = /^(3[0-1]|[1-2][0-9]|0[1-9])\-(1[0-2]|0[1-9])\-(\d{4})$/i, 
+        validDateRegEx = /^(\d{4})\-(1[0-2]|0[1-9])\-(3[0-1]|[1-2][0-9]|0[1-9])$/i;
     record.set(values);
     
     // check dates: itera sobre las propiedades del nuevo record, 
