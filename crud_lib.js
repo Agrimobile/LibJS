@@ -285,13 +285,33 @@ var f_crud = {
   },
     
   form_open: function(grid_panel, action) {
-    var form_panel = Ext.create(grid_panel.form_name);
+    var form_panel = Ext.create(grid_panel.form_name), frm, 
+        onEnterHandler = function(textfield, e, eOpts) {
+          if(e.keyCode === 13) {
+            debugger;
+            e.stopEvent();
+            e.keyCode = 9;
+            textfield.fireEvent('keypress', this, e, eOpts);
+            /*var nextField = textfield.next();
+            if(nextField) {
+              nextField.focus();
+            }
+            else {
+              textfield.cancelFocus();
+            }*/
+          }
+        };
     
     if (action==='EDIT' && typeof grid_panel.record==='undefined') return;
     
     MyApp.pantalla_anterior = MyApp.main.getLayout().getActiveItem();
     MyApp.main.add(form_panel);
 
+    frmFields = form_panel.getForm().getFields().items;
+    for (var i = frmFields.length - 1; i >= 0; i--) {
+      frmFields[i].enableKeyEvents = true;
+      frmFields[i].addListener("keypress", onEnterHandler);
+    }
     if(grid_panel.parent) {
       form_panel.parent = grid_panel.parent;
     }
