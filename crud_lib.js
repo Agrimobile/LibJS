@@ -515,9 +515,11 @@ var f_crud = {
     if (MyApp.main.getLayout().getLayoutItems().length > 1) {MyApp.main.getLayout().prev();
     }
     form.close();
-    // MyApp.main.down('#estado_editar').setHtml('');    
-    if (MyApp.estado_sinc === 'PENDIENTE'){
-      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
+    // MyApp.main.down('#estado_editar').setHtml(''); 
+    var sync = window.localStorage.getItem("estado_sinc");   
+    if (sync === 'Pendiente'){
+      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: ' + sync);
+      window.localStorage.setItem("estado_sinc", "Pendiente");
     }
   },
 
@@ -641,8 +643,10 @@ var f_crud = {
       }
     });
     f_crud.close_form(form_panel);
-    if (MyApp.estado_sinc !== 'PENDIENTE') {
-      MyApp.estado_sinc = 'PENDIENTE' ;
+
+    var sync = window.localStorage.getItem("estado_sinc");
+    if (sync !== 'Pendiente') {
+      window.localStorage.setItem("estado_sinc", "Pendiente");
       MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
       // f_sinc.defer_sinc();      
     }

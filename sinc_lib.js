@@ -63,12 +63,14 @@ f_sinc = {
         panel.down('#tabla').setValue(tabla + ' ('+contador+'/'+MyApp.sinc_array_store.length+')');
       }
       else{
-        MyApp.main.down('#estado_sinc').setHtml('Sincronizado: ' + tabla);
+        MyApp.main.down('#estado_sinc').setHtml('Sincronizando: ' + tabla);
+        window.localStorage.setItem("estado_sinc", "Pendiente");
       }      
       f_sinc.sincronizar_upload(tabla,tabla,function(rtn){
         if (rtn === -1) {
           Ext.Function.defer(function(){ cerrar_ventana(); }, 3000);
           MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Error!');
+          window.localStorage.setItem("estado_sinc", "Pendiente - Error");
           f_releer_tablas();
           if (!panel) f_sinc.defer_sinc();;
           return;
@@ -79,6 +81,7 @@ f_sinc = {
             if (rtn === -1){
               Ext.Function.defer(function(){ cerrar_ventana(); }, 3000);
               MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Error!');
+              window.localStorage.setItem("estado_sinc", "Pendiente - Error");
               f_releer_tablas();
               if (!panel) f_sinc.defer_sinc();;
               return;
@@ -98,6 +101,8 @@ f_sinc = {
         f_releer_tablas();
         if (panel) Ext.Function.defer(function(){ cerrar_ventana(); }, 2000);
         MyApp.main.down('#estado_sinc').setHtml('Sincronizado: terminado');
+        window.localStorage.setItem("estado_sinc", "Terminado");
+
         MyApp.sinc_array_store = [];
         MyApp.sinc_array_tabla = [];
         f_crud.secuencia_mysql(1,function(secuencia) {
