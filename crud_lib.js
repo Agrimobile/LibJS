@@ -1010,6 +1010,19 @@ var f_crud = {
     }
   },
 
+  applyRenderer: function(panel, gridId, storeName, targetField, colDataIndex) {
+    var i, cols = panel.down("#" + gridId).columns,
+        rendFn = function(value, metaData, record, rowIndex, colIndex, store){
+          return f_crud.getDisplayValue(storeName, value, targetField);
+        };
+
+    for (i = cols.length - 1; i >= 0; i--) {
+      if(cols[i].dataIndex === colDataIndex) {
+        cols[i].renderer = rendFn;
+      }
+    }
+  },
+
   getDisplayValue: function(storeName, value, fieldName, idName) {
     var st = Ext.getStore(storeName), cod, displayValue;
     if(idName) {
