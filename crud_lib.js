@@ -1,6 +1,7 @@
 var f_crud = {
 
   cerrar_mensaje: function(tiempo){
+  // testing cerrar mensaje
     Ext.Function.defer(function(){
       Ext.Msg.hide();
     }, tiempo * 1000);    
