@@ -1,6 +1,7 @@
 var f_crud = {
 
   cerrar_mensaje: function(tiempo){
+  // testing cerrar mensaje
     Ext.Function.defer(function(){
       Ext.Msg.hide();
     }, tiempo * 1000);    
@@ -228,11 +229,11 @@ var f_crud = {
   },
   
   load_store: function(store_name, sql_where, sql_command, callback) {
-    var store = Ext.getStore(store_name);
-    var record = Ext.create(store.getProxy().getModel().getName());
+    var store = Ext.getStore(store_name),
+        record = Ext.create(store.getProxy().getModel().getName()),
     // Extract fields in model
-    var sql_fields = '';  
-    var fields = record.getFields(); 
+        sql_fields = '',  
+        fields = record.getFields(); 
 
     for (var i = 0; i < fields.length; i++) {
       sql_fields = sql_fields + fields[i].getName() + ',';
@@ -285,13 +286,29 @@ var f_crud = {
   },
     
   form_open: function(grid_panel, action) {
+    var form_panel = Ext.create(grid_panel.form_name), frm, 
+        // event onEnter handler
+        onEnterHandler = function(textfield, e, eOpts) {
+          if(e.keyCode === 13) {
+            e.stopEvent();            
+            textfield.blur();
+          }
+        };
     
     if (action==='EDIT' && typeof grid_panel.record==='undefined') return;
-    MyApp.pantalla_anterior = MyApp.main.getLayout().getActiveItem();
-    var form_panel = Ext.create(grid_panel.form_name);
     
-    MyApp.main.add(form_panel);
-    //---------------
+    MyApp.pantalla_anterior = MyApp.main.getLayout().getActiveItem();
+    
+    // Code for add an eventHandler in each input of any form
+    if(form_panel.getForm) {
+      frmFields = form_panel.getForm().getFields().items;
+      for (var i = frmFields.length - 1; i >= 0; i--) {
+        frmFields[i].enableKeyEvents = true;
+        frmFields[i].addListener("keypress", onEnterHandler);
+      }
+    
+    }
+      
     if(grid_panel.parent) {
       form_panel.parent = grid_panel.parent;
     }
@@ -301,27 +318,22 @@ var f_crud = {
     form_panel.grid_panel = grid_panel.down('#grid');
     form_panel.action = action;
 
-    /*if (form_panel.getItemId()==='form') {
-      var form = form_panel;  
-    } else {
-      var form = form_panel.down('#form');
-    }*/
-    var form = form_panel;
-
     if (action === 'ADD') {
       
       var newrecord = Ext.create(form_panel.model_name);    
       f_crud.secuencia(function(rtn){
         if (rtn !== -1) {
           newrecord.set('id', rtn);
-          form.loadRecord(newrecord);
+          form_panel.loadRecord(newrecord);
           if (typeof newrecord.get('codigo') === 'undefined') {
+            MyApp.main.add(form_panel);
             MyApp.main.getLayout().setActiveItem(form_panel);
           } 
           else {
             f_crud.get_codigo(newrecord,function(rtn) {
               newrecord.set('codigo', rtn)
-              form.loadRecord(newrecord);
+              form_panel.loadRecord(newrecord);
+              MyApp.main.add(form_panel);
               MyApp.main.getLayout().setActiveItem(form_panel);
             });
           }          
@@ -330,12 +342,11 @@ var f_crud = {
     }
     else {
       if (action === 'EDIT') {
-        
-        form.loadRecord(grid_panel.record);
+        form_panel.loadRecord(grid_panel.record);
       }
+      MyApp.main.add(form_panel);
       MyApp.main.getLayout().setActiveItem(form_panel);
     }
-
   },
   
   //grid_check_delete can be used in grid with records that are asociated by agregation with other tables
@@ -402,14 +413,16 @@ var f_crud = {
             f_crud.grid_delete(grid_panel);
           }
           else {
-            var borrarVinculados =  function(btn) {
+
+            // CODIGO PARA 'BORRAR DE TODAS FORMAS'
+            /*var borrarVinculados =  function(btn) {
               if(btn === 'yes') {
-                f_crud.sql_commands(sqlTablesToDelete, function(rtn){
+                f_crud.sql_commands(sqlTablesToDelete, function(rtn) {
                   if(rtn > 0) {
                     f_crud.grid_delete(grid_panel, true);  
                   }
                   else {
-                    sql_commands("Error: Something went wrong while trying to delete related records");
+                    console.log("Error: algo salio mal cuando se intento los registros vinculados");
                   }
                 });
               }
@@ -440,6 +453,14 @@ var f_crud = {
                 no: 'Borrar de todas formas' 
               },
               fn: borrarVinculadosAlert
+            });*/
+
+            // CODIGO PARA 'NO BORRAR DE TODAS FORMAS'
+            Ext.Msg.show({
+              title: checkConfig[0].msgTitle,
+              message: checkConfig[0].message,
+              iconCls: 'x-fa fa-warning',
+              buttons:  Ext.Msg.OK
             });
           }
         });
@@ -492,13 +513,16 @@ var f_crud = {
     if (MyApp.main.getLayout().getLayoutItems().length > 1) {MyApp.main.getLayout().prev();
     }
     form.close();
-    // MyApp.main.down('#estado_editar').setHtml('');    
-    if (MyApp.estado_sinc === 'PENDIENTE'){
-      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
+    // MyApp.main.down('#estado_editar').setHtml(''); 
+    var sync = window.localStorage.getItem("estado_sinc");   
+    if (sync === 'Pendiente'){
+      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: ' + sync);
+      window.localStorage.setItem("estado_sinc", "Pendiente");
     }
   },
 
-  /* mientras que save_form toma el record generado por el form, y lo inserta en la tabla, save_several_records 
+  /* 
+    Mientras que save_form toma el record generado por el form, y lo inserta en la tabla, save_several_records 
     loopeara sobre los records de una grilla y los irá insertando (TIENE QUE SER SECUENCIAL, ya que cada registro
     necesita generar una nueva clave) - config should have the name of the pivot pk and the name of the recordsPk, like
     
@@ -509,26 +533,11 @@ var f_crud = {
   */
 
   save_several_records: function(form_panel, config) {
-    var recordsToAdd = [], gridRecs = form_panel.down("#addinggrid").store.data.items,
-      store_array = form_panel.store_array, form, len, modelName, tableName;
-
-    modelName = form_panel.store_array[0].getModel().getName();
-    tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
-
-    /*if (form_panel.getItemId() === 'form') {
-      form = form_panel;  
-    } 
-    else {
-      form = form_panel.down('#form');
-    }*/
-    var form = form_panel;
-    for (var i = gridRecs.length - 1; i >= 0; i--) {
-      if(gridRecs[i].data.agregar) {
-        recordsToAdd.push(gridRecs[i]);
-      }
-    }
-
-    len = recordsToAdd.length;
+    var recordsToAdd = form_panel.down("#addinggrid").getSelection(),
+        store_array = form_panel.store_array, 
+        len = recordsToAdd.length, 
+        modelName = store_array[0].getModel().getName(),
+        tableName = modelName.slice(modelName.lastIndexOf('.') + 1);
 
     f_crud.secuencia(function(genMaxId) {
       if(genMaxId > -1) {
@@ -585,11 +594,25 @@ var f_crud = {
   },
   
   save_form: function(form_panel) {
-    var store_array = form_panel.store_array, form, record,
-        form = form_panel 
+    var store_array = form_panel.store_array,
+        record = form_panel.getRecord(),
+        values = form_panel.getValues(),
+        invalidDateRegEx = /^(3[0-1]|[1-2][0-9]|0[1-9])\-(1[0-2]|0[1-9])\-(\d{4})$/i, 
+        validDateRegEx = /^(\d{4})\-(1[0-2]|0[1-9])\-(3[0-1]|[1-2][0-9]|0[1-9])$/i;
+    record.set(values);
     
-    record = form.getRecord();
-    record.set(form.getValues());  
+    // check dates: itera sobre las propiedades del nuevo record, 
+    // si encuentra una fecha y esta en d-m-Y, la convierte a Y-m-d
+    for(property in values) {
+      var invalidDate = String(values[property]).match(invalidDateRegEx);
+      if(invalidDate){
+        var newDateStr = invalidDate[3] + "-" + invalidDate[2] + "-" + invalidDate[1],
+            newDateObj = {};
+        newDateObj[property] = newDateStr;
+        record.set(newDateObj);
+      }
+    }
+
     if (form_panel.action === 'ADD') {
       store_array[0].add(record);
       if(form_panel.grid_panel.viewConfig) { // TODO: encontrar una mejor forma de hacer este control.
@@ -618,8 +641,10 @@ var f_crud = {
       }
     });
     f_crud.close_form(form_panel);
-    if (MyApp.estado_sinc !== 'PENDIENTE') {
-      MyApp.estado_sinc = 'PENDIENTE' ;
+
+    var sync = window.localStorage.getItem("estado_sinc");
+    if (sync !== 'Pendiente') {
+      window.localStorage.setItem("estado_sinc", "Pendiente");
       MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
       // f_sinc.defer_sinc();      
     }
@@ -832,7 +857,7 @@ var f_crud = {
     }        
   },
   
-  get_max_id: function(record){
+  get_max_id: function(record) {
     var modelName = record.self.getName();
     var table_name = modelName.slice(modelName.lastIndexOf('.') + 1);
     var db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
@@ -848,6 +873,22 @@ var f_crud = {
       f_crud.mensaje('Error', 'Se produjo un error al generar el nuevo ID - SQL:'+sql);
     }    
   }, 
+
+  checkSecuencia: function() {
+    //----- controlo que exista un registro en secuencia
+    var sql ='select count(id) as cant from secuencia';
+    var me = this;
+    me.load_store('Secuencia','','',function(rtn) {
+      me.sql_select(sql,function(array) {
+        var cant = array[0].cant;
+        if (cant===0) {
+          me.sql_command('Insert into secuencia (id,secuencia) values (1,1)', function(rtn){
+            console.log('Insert en tabla secuencia = ',rtn);
+          } );
+        }
+      });
+    });
+  },
 
   secuencia: function(callback, cantidad) {
     if (!cantidad) var cantidad = 0;
@@ -967,6 +1008,19 @@ var f_crud = {
         return 'REAL';
       case 'bool':
         return 'NUMERIC';
+    }
+  },
+
+  applyRenderer: function(panel, gridId, storeName, targetField, colDataIndex) {
+    var i, cols = panel.down("#" + gridId).columns,
+        rendFn = function(value, metaData, record, rowIndex, colIndex, store){
+          return f_crud.getDisplayValue(storeName, value, targetField);
+        };
+
+    for (i = cols.length - 1; i >= 0; i--) {
+      if(cols[i].dataIndex === colDataIndex) {
+        cols[i].renderer = rendFn;
+      }
     }
   },
 
