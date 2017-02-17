@@ -635,8 +635,7 @@ var f_crud = {
         var modelName, sql_table;
         for (i in store_array){
           modelName = store_array[i].getProxy().getModel().getName();
-          sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);
-          // f_sinc.agregar_tabla(sql_table);        
+          sql_table = modelName.slice(modelName.lastIndexOf('.') + 1);       
         }
       }
     });
@@ -645,8 +644,7 @@ var f_crud = {
     var sync = window.localStorage.getItem("estado_sinc");
     if (sync !== 'Pendiente') {
       window.localStorage.setItem("estado_sinc", "Pendiente");
-      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');
-      // f_sinc.defer_sinc();      
+      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: Pendiente');      
     }
   },
   
@@ -939,6 +937,19 @@ var f_crud = {
       tx.executeSql('drop table ' + table_name);  
       console.log('Drop table: '+table_name);
     })
+  },
+
+  // Esta funcion hace uso de drop_table que es asincrona con lo que se pierde la posibilidad de schedulear algo para que se haga immediatamente despues de que haya terminado. Habria que encontrar la forma de hacerlo con promises para que funcione.
+  drop_all_tables: function() {
+    f_sinc.agregar_todas();
+    var tablesToDrop = MyApp.sinc_array_tabla;
+    MyApp.sinc_array_tabla = [];
+    tablesToDrop.push("Secuencia");
+    tablesToDrop.push("sqlite_sequence");
+    tablesToDrop.push("Registros_borrados");
+    for (var i = tablesToDrop.length - 1; i >= 0; i--) {
+      f_crud.drop_table(tablesToDrop[i]);
+    }
   },
   
   create_table: function(store_name, callback) {
