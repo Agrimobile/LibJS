@@ -279,7 +279,8 @@ var f_crud = {
 
   openNestedForm: function(panelName) {
     var pantalla = Ext.create('MyApp.view.' + panelName);
-    pantalla.fireEvent("render",pantalla);
+    pantalla.fake = true;
+    pantalla.fireEvent("render", pantalla);
     f_crud.form_open(pantalla,'ADD');
     pantalla.close();
     pantalla.destroy();
@@ -944,6 +945,10 @@ var f_crud = {
     f_sinc.agregar_todas();
     var tablesToDrop = MyApp.sinc_array_tabla;
     MyApp.sinc_array_tabla = [];
+
+    for (var i = tablesToDrop.length - 1; i >= 0; i--) {
+      f_crud.load_store(tablesToDrop[i], '1 = 0');
+    }
     tablesToDrop.push("Secuencia");
     tablesToDrop.push("sqlite_sequence");
     tablesToDrop.push("Registros_borrados");
