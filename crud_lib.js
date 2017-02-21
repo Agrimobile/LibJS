@@ -670,7 +670,11 @@ var f_crud = {
       console.log('db.transaction = Ok'); 
       for (var i in store_array) {
         //Reset stores states.
-        store_array[i].sync(); 
+        var currStItems = store_array[i].data.items;
+        for (var curStIt = currStItems.length - 1; curStIt >= 0; curStIt--) {
+          currStItems[curStIt].phantom = false;
+        }
+        store_array[i].sync();// -> this is breaking all my work. 
       }
       if(typeof callback == 'function') callback(1);
     }
@@ -936,24 +940,39 @@ var f_crud = {
     var db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
     db.transaction(function (tx) {
       tx.executeSql('drop table ' + table_name);  
-      console.log('Drop table: '+table_name);
+      console.log('Drop table: '+ table_name);
+    })
+  },
+
+  truncate_table: function(table_name, cb) {
+    var db = openDatabase(MyApp.archivo_base, '1.0', MyApp.archivo_base, 2 * 1024 * 1024);
+    db.transaction(function (tx) {
+      tx.executeSql('delete from ' + table_name);  
+      console.log('Delete complete: '+ table_name);
+      if(cb) {
+        cb(table_name);
+      }
     })
   },
 
   // Esta funcion hace uso de drop_table que es asincrona con lo que se pierde la posibilidad de schedulear algo para que se haga immediatamente despues de que haya terminado. Habria que encontrar la forma de hacerlo con promises para que funcione.
-  drop_all_tables: function() {
+  clean_all_tables: function() {
     f_sinc.agregar_todas();
-    var tablesToDrop = MyApp.sinc_array_tabla;
+    var tablesToDrop = MyApp.sinc_array_tabla, tablesWithoutStore = [];
     MyApp.sinc_array_tabla = [];
 
     for (var i = tablesToDrop.length - 1; i >= 0; i--) {
-      f_crud.load_store(tablesToDrop[i], '1 = 0');
+      f_crud.truncate_table(tablesToDrop[i], function(st) {
+        f_crud.load_store(st, '1 = 0');
+      });
     }
-    tablesToDrop.push("Secuencia");
-    tablesToDrop.push("sqlite_sequence");
-    tablesToDrop.push("Registros_borrados");
-    for (var i = tablesToDrop.length - 1; i >= 0; i--) {
-      f_crud.drop_table(tablesToDrop[i]);
+    
+    tablesWithoutStore.push("Secuencia");
+    tablesWithoutStore.push("sqlite_sequence");
+    tablesWithoutStore.push("Registros_borrados");
+
+    for (var i = tablesWithoutStore.length - 1; i >= 0; i--) {
+      f_crud.truncate_table(tablesWithoutStore[i]);
     }
   },
   
