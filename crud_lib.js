@@ -82,7 +82,8 @@ var f_crud = {
         if (records.length === 0) console.log('Sql:',sql_command);
         if(typeof callback == 'function') callback(store);
       } else {
-        f_crud.mensaje('Error 2 de lectura en tabla: ' + sql_table , 'Controle su conexión a Internet.');      
+        /*f_crud.mensaje('Error 2 de lectura en tabla: ' + sql_table , 'Controle su conexión a Internet.');*/   
+        f_crud.mensaje('Error de Base de Datos' , 'Controle el nombre de la Base de Datos y/o la url del Servidor.');
         // f_crud.cerrar_mensaje(5);
         if(typeof callback == 'function') callback(-1);
       };
@@ -120,13 +121,15 @@ var f_crud = {
           if(typeof callback == 'function') callback(1);
         }
         else {
-          f_crud.mensaje('Error SQL', resp_json.message + ' -<br>' + data, 5);
+          f_crud.mensaje('Error SQL', "Se cancelara la sincronizacion <br> Debugging: " + resp_json.message, 5);
+          console.log(resp_json.message + ' -<br>' + data);
           if(typeof callback == 'function') callback(-1);
         }
       },
       failure: function(response, opts) {
-        alert(MyApp.url_lib + 'crud_lib.php' + '?action=batch');
-        f_crud.mensaje('Error','Error en conexion con el servidor, revise su conexion Internet.  Resp text: ' + response.responseText + ' Respuesta n: ' + response.status, 5);
+        console.log('Response text: ' + response.responseText + ' Respuesta n: ' + response.status);
+        console.log("While trying to send to: " + MyApp.url_lib + 'crud_lib.php' + '?action=batch');
+        f_crud.mensaje('Error','Revise su conexion Internet. Ocurrio un error al intentar conectarse al servidor', 5);
         if(typeof callback == 'function') callback(-1);
       }
     });
