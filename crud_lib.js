@@ -507,6 +507,10 @@ var f_crud = {
         title:'Borrar registro',
         message: 'Desea borrar el registro',
         buttons:  Ext.Msg.YESNO,
+        buttonText: {
+          yes: 'Si',
+          no: 'No' 
+        },
         iconCls: 'x-fa fa-warning',
         fn: opcion
       });
@@ -514,15 +518,38 @@ var f_crud = {
   },
       
   close_form: function(form) {
-    if (MyApp.main.getLayout().getLayoutItems().length > 1) {MyApp.main.getLayout().prev();
+    var opcion = function(opt) {
+      if(opt === 'yes') {
+        if (MyApp.main.getLayout().getLayoutItems().length > 1) {
+          MyApp.main.getLayout().prev();
+        }
+        form.close();
+        // MyApp.main.down('#estado_editar').setHtml(''); 
+        var sync = window.localStorage.getItem("estado_sinc");   
+        if (sync === 'Pendiente'){
+          MyApp.main.down('#estado_sinc').setHtml('Sincronizado: ' + sync);
+          window.localStorage.setItem("estado_sinc", "Pendiente");
+        }
+      }
+    };
+
+    if(!form.saved && form.isDirty && form.isDirty()) {
+      Ext.Msg.show({
+        title:'Cancelar la carga?',
+        message: 'Perdera toda los datos agregados<br> en este formulario',
+        buttons:  Ext.Msg.YESNO,
+        buttonText: {
+          yes: 'Si, salir',
+          no: 'Permanecer' 
+        },
+        iconCls: 'x-fa fa-warning',
+        fn: opcion
+      });
     }
-    form.close();
-    // MyApp.main.down('#estado_editar').setHtml(''); 
-    var sync = window.localStorage.getItem("estado_sinc");   
-    if (sync === 'Pendiente'){
-      MyApp.main.down('#estado_sinc').setHtml('Sincronizado: ' + sync);
-      window.localStorage.setItem("estado_sinc", "Pendiente");
+    else {
+      opcion('yes');
     }
+    
   },
 
   /* 
@@ -578,6 +605,7 @@ var f_crud = {
             
             f_crud.save_stores(store_array, function(rtn){
               if (rtn > -1) {
+                form_panel.saved=true;
                 f_crud.close_form(form_panel);
                 console.log("Worked ok!");
               }
@@ -643,6 +671,7 @@ var f_crud = {
         }
       }
     });
+    form_panel.saved=true;
     f_crud.close_form(form_panel);
 
     var sync = window.localStorage.getItem("estado_sinc");
