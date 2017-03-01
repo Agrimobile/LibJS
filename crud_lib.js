@@ -989,23 +989,45 @@ var f_crud = {
 
   // Esta funcion hace uso de drop_table que es asincrona con lo que se pierde la posibilidad de schedulear algo para que se haga immediatamente despues de que haya terminado. Habria que encontrar la forma de hacerlo con promises para que funcione.
   clean_all_tables: function() {
-    f_sinc.agregar_todas();
-    var tablesToDrop = MyApp.sinc_array_tabla, tablesWithoutStore = [];
-    MyApp.sinc_array_tabla = [];
+    var deleteAll =  function(btn) {
+      if(btn === 'yes') {
+        var tablesToDrop, tablesWithoutStore = [], layout = MyApp.main.getLayout();
+        f_sinc.agregar_todas();
+        tablesToDrop = MyApp.sinc_array_tabla
+        MyApp.sinc_array_tabla = [];
+        for (var i = tablesToDrop.length - 1; i >= 0; i--) {
+          f_crud.truncate_table(tablesToDrop[i], function(st) {
+            f_crud.load_store(st, '1 = 0');
+          });
+        }
+        tablesWithoutStore.push("Secuencia");
+        tablesWithoutStore.push("sqlite_sequence");
+        tablesWithoutStore.push("Registros_borrados");
+        for (var i = tablesWithoutStore.length - 1; i >= 0; i--) {
+          f_crud.truncate_table(tablesWithoutStore[i]);
+        }
 
-    for (var i = tablesToDrop.length - 1; i >= 0; i--) {
-      f_crud.truncate_table(tablesToDrop[i], function(st) {
-        f_crud.load_store(st, '1 = 0');
-      });
-    }
-    
-    tablesWithoutStore.push("Secuencia");
-    tablesWithoutStore.push("sqlite_sequence");
-    tablesWithoutStore.push("Registros_borrados");
+        layout.setActiveItem(0);
+        next = layout.getNext();
+        while(next) {
+          next.close();
+          next.destroy();
+          next = layout.getNext();
+        }
+      }
+    };
 
-    for (var i = tablesWithoutStore.length - 1; i >= 0; i--) {
-      f_crud.truncate_table(tablesWithoutStore[i]);
-    }
+    Ext.Msg.show({
+      title: "Borrar Todo",
+      message: 'Se borraran todos los registros<br> de la DB local, continuar?',
+      iconCls: 'x-fa fa-warning',
+      buttons:  Ext.Msg.YESNO,
+      buttonText: {
+        yes: 'Si',
+        no: 'No' 
+      },
+      fn: deleteAll
+    });
   },
   
   create_table: function(store_name, callback) {
