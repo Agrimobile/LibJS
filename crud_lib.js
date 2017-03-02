@@ -991,7 +991,7 @@ var f_crud = {
   clean_all_tables: function() {
     var deleteAll =  function(btn) {
       if(btn === 'yes') {
-        var tablesToDrop, tablesWithoutStore = [], layout = MyApp.main.getLayout();
+        var tablesToDrop, tablesWithoutStore = [];
         f_sinc.agregar_todas();
         tablesToDrop = MyApp.sinc_array_tabla
         MyApp.sinc_array_tabla = [];
@@ -1003,17 +1003,31 @@ var f_crud = {
         tablesWithoutStore.push("Secuencia");
         tablesWithoutStore.push("sqlite_sequence");
         tablesWithoutStore.push("Registros_borrados");
-        for (var i = tablesWithoutStore.length - 1; i >= 0; i--) {
+        for (var i = tablesWithoutStore.length - 1; i >= 1; i--) {
           f_crud.truncate_table(tablesWithoutStore[i]);
         }
 
-        layout.setActiveItem(0);
-        next = layout.getNext();
-        while(next) {
-          next.close();
-          next.destroy();
-          next = layout.getNext();
-        }
+        f_crud.truncate_table(tablesWithoutStore[0]);
+
+        Ext.Msg.show({
+          title: 'Borrado completo',
+          width: "80%",
+          message: 'Se ha borrado el contenido<br> de la BD local',
+          iconCls: 'x-fa fa-warning',
+          buttons:  Ext.Msg.OK,
+          fn: function(btn) {
+            console.log("Borrado todo");
+            var next, layout = MyApp.main.getLayout()
+            layout.setActiveItem(0);
+            next = layout.getNext();
+            while(next) {
+              next.close();
+              next.destroy();
+              next = layout.getNext();
+            }
+          }
+        });
+
       }
     };
 
