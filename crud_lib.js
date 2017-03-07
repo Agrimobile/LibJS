@@ -1008,6 +1008,8 @@ var f_crud = {
         }
 
         f_crud.truncate_table(tablesWithoutStore[0]);
+        MyApp.main.down('#estado_sinc').setHtml('Sincronizando: Pendiente');
+        window.localStorage.setItem("estado_sinc", "Pendiente");
 
         Ext.Msg.show({
           title: 'Borrado completo',
